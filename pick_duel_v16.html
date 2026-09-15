@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b111e">
+<meta name="description" content="5枚の防衛線をめぐる、星域のカードバトル。スマホ縦持ち対応・オフラインCPU対戦。">
+<title>星域ドラフト v0.16</title>
+<style>
+  :root{--bg:#141a2a;--bg2:#1d2438;--card:#e9e6dc;--ink:#1a1a1a;--gold:#d4b25a;--red:#c0503a;--green:#6fa37a;--mist:#8b95ad;--line:rgba(233,230,220,.18)}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--card);font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;line-height:1.5}
+  body{max-width:1000px;margin:0 auto;padding:14px 12px 40px}
+  h1{font-size:20px;margin:0 0 2px;letter-spacing:.05em}
+  h1 .note{font-weight:400}
+  .panel{border:1px solid var(--line);padding:12px;margin-bottom:12px;border-radius:4px}
+  .panel h2{font-size:14px;margin:0 0 8px;color:var(--gold)}
+  .note{font-size:12px;color:var(--mist)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;min-height:20px}
+  .card{width:98px;height:142px;background:var(--card);color:var(--ink);border-radius:6px;padding:6px;position:relative;cursor:pointer;user-select:none;border:3px solid transparent;box-shadow:0 2px 0 rgba(0,0,0,.4);font-size:11px;line-height:1.25}
+  .card:focus-visible{outline:3px solid var(--gold)}
+  .card.sel{border-color:var(--gold)}
+  .card.target{border-color:var(--red);cursor:crosshair}
+  .card.static{cursor:default}
+  .card.exhausted{opacity:.55}
+  .card.dim{opacity:.35;cursor:default}
+  .card.stealth{box-shadow:0 0 0 2px #8fd0ff inset,0 2px 0 rgba(0,0,0,.4)}
+  .card.trump{background:linear-gradient(160deg,#fff4cf,#e6cf8a);border-color:#b8902a}
+  .card.evo{background:linear-gradient(160deg,#f3ecd9,#dcd2f0)}
+  .card.back{background:repeating-linear-gradient(45deg,#3b3557 0 6px,#2d2945 6px 12px);border-color:#9a8fc4}
+  .card.back .nm{color:#d8d2ee;margin-top:14px}
+  .card .cost{position:absolute;top:-8px;left:-8px;width:24px;height:24px;border-radius:50%;background:var(--bg);color:var(--card);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid var(--gold)}
+  .card .nm{font-weight:700;font-size:12px;margin-top:6px;text-align:center}
+  .card .fac{text-align:center;font-size:10px;padding:1px 0;border-radius:2px;margin:2px 0}
+  .fac.艦隊{background:#f0c9c0;color:#7a2a1a}.fac.機械{background:#c5d8ea;color:#1f405e}.fac.星霊{background:#cfe6d3;color:#1f4d2b}.fac.深淵{background:#d9c8e6;color:#4a1f5e}.fac.共通{background:#ddd;color:#444}
+  .card .tx{text-align:center;color:#444;font-size:9px;min-height:38px;line-height:1.2}
+  .card .st{position:absolute;bottom:6px;left:6px;right:6px;display:flex;justify-content:space-between;font-weight:700;font-size:16px}
+  .card .st .a{color:var(--red)}.card .st .h{color:var(--green)}
+  .card .cnt{position:absolute;top:-8px;right:-6px;background:var(--gold);color:var(--ink);font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px}
+  .card.small{width:66px;height:92px;padding:4px;font-size:9px}.card.small .nm{font-size:10px}.card.small .tx{display:none}.card.small .st{font-size:12px}.card.small .cost{width:20px;height:20px;font-size:11px}
+  .card.tiny{width:40px;height:56px;padding:2px}.card.tiny .nm{font-size:8px;margin-top:14px}
+  button{font:inherit;background:var(--gold);color:var(--ink);border:0;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:700}
+  button:disabled{opacity:.4;cursor:default}
+  button.face{background:var(--red);color:#fff}
+  button.ghost{background:transparent;color:var(--card);border:1px solid var(--line)}
+  button.sm{padding:4px 10px;font-size:12px}
+  select,input,textarea{font:inherit;background:var(--bg2);color:var(--card);border:1px solid var(--line);border-radius:4px;padding:6px}
+  .hidden{display:none}
+  .status{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px}
+  .side{border:1px solid var(--line);padding:8px;border-radius:4px;margin-bottom:8px;min-height:60px;display:flex;gap:12px;align-items:flex-start}
+  .side.active{border-color:var(--gold)}
+  .shields{flex:0 0 auto;border-left:1px dashed var(--line);padding-left:12px;min-width:120px}
+  .shields .row{gap:3px}
+  .msg{text-align:center;min-height:22px;font-size:13px;color:var(--gold);margin:6px 0}
+  .log{font-size:12px;color:#c8cbd6;max-height:150px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;margin-top:8px}
+  .log p{margin:0 0 3px}.log p.hi{color:var(--gold)}
+  .energy{display:inline-block;background:var(--bg2);padding:2px 8px;border-radius:3px;margin-left:6px}
+  .kw{font-weight:700}
+  .menu{display:grid;gap:10px;max-width:380px;margin:40px auto}
+  .menu button{padding:16px;font-size:16px;text-align:left;background:var(--bg2);color:var(--card);border:1px solid var(--line)}
+  .menu button:hover{border-color:var(--gold)}
+  .title{text-align:center;margin:60px 0 10px}
+  .title h1{font-size:34px}
+  .opt{display:flex;gap:10px;align-items:center;margin:10px 0;flex-wrap:wrap}
+  .opt button.on{outline:2px solid var(--gold)}
+  .pass{text-align:center;padding:60px 20px}
+  .pass h2{font-size:22px;color:var(--gold)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+  .rules p{font-size:13px;margin:0 0 8px}
+  pre{font-size:12px;white-space:pre-wrap;color:#c8cbd6}
+  .builder{display:grid;grid-template-columns:1fr 240px;gap:12px}
+  @media(max-width:720px){.builder{grid-template-columns:1fr}}
+  .decklist{font-size:12px}
+  .decklist div{display:flex;justify-content:space-between;padding:2px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+  .decklist div:hover{background:var(--bg2)}
+  .tabs button{background:transparent;color:var(--mist);border:1px solid var(--line)}
+  .tabs button.on{color:var(--gold);border-color:var(--gold)}
+  .curve{display:flex;gap:3px;align-items:flex-end;height:40px;margin:6px 0}
+  .curve div{flex:1;background:var(--gold);min-height:2px;position:relative}
+  .curve div span{position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-size:10px;color:var(--mist)}
+:root{--bg:#0b111e;--bg2:#131e30;--card:#f0ebdd;--ink:#1b2331;--gold:#e9c27b;--red:#fa8f78;--green:#8cd5b7;--mist:#a0acc0;--line:#26354a;--cyan:#8cd1de;--safe:env(safe-area-inset-bottom,0px)}
+html{scrollbar-gutter:stable;color-scheme:dark}html,body{min-height:100%;background:var(--bg)}body{max-width:1080px;padding:20px 22px 40px;font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;font-size:14px;background:radial-gradient(ellipse at 70% 0%,#1c29403d,transparent 70%)}
+button,input,select,textarea{touch-action:manipulation}button{min-height:44px;padding:10px 16px;border-radius:10px;font-size:13px;transition:background .15s,transform .15s}button:active:not(:disabled){transform:translateY(1px)}button:hover:not(:disabled){filter:brightness(1.08)}button:focus-visible,[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}button.ghost{background:#142035;border-color:#33435b}button.sm{min-height:44px;font-size:12px}.hidden{display:none!important}h1{font-size:21px;letter-spacing:.06em}h2{font-weight:650}.note{color:var(--mist);font-size:12px;line-height:1.65}input,select,textarea{max-width:100%;min-width:0;font-size:16px;padding:11px;border-radius:9px}.opt{gap:8px}select{width:auto}pre{overflow-wrap:anywhere;font-size:12px;line-height:1.8}.panel{background:#101a2a;border:1px solid var(--line);padding:18px;border-radius:14px;margin-bottom:16px}.panel h2{font-size:14px}.top{padding:0 0 12px;margin:0 0 12px;gap:10px}.row{gap:10px;min-width:0}.rules p{font-size:14px;line-height:1.9;margin-bottom:14px}
+.brandbar{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.2em;color:var(--gold);padding:4px 0 16px}.version{letter-spacing:.05em;border:1px solid var(--line);padding:5px 9px;border-radius:20px;color:var(--mist)}.home{max-width:740px;margin:auto}.hero{position:relative;padding:56px 24px 28px;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:radial-gradient(circle at 77% 35%,#3e53685e,transparent 40%),linear-gradient(130deg,#16243a,#0c1523)}.hero::before,.hero::after{content:'';position:absolute;pointer-events:none;border:1px solid #ddc38c30;border-radius:50%;width:300px;height:300px;right:-95px;top:-84px;transform:rotate(-35deg)}.hero::after{width:220px;height:220px;right:-55px;top:-44px;border-style:dashed}.eyebrow{font-size:10px;letter-spacing:.26em;color:var(--gold);margin:0 0 16px}.hero h1{font-size:clamp(30px,5vw,48px);line-height:1.3;font-weight:600;letter-spacing:.12em}.hero .lede{font-size:14px;color:#bac8da;line-height:1.9;margin:17px 0 24px}.hero-bottom{display:flex;align-items:center;gap:14px;border-top:1px solid #ffffff18;padding-top:15px;font-size:11px;color:var(--mist)}.shield-motif{display:flex;gap:5px}.shield-motif i{display:block;width:14px;height:18px;background:var(--gold);clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);opacity:.8}.quick-panel{padding:22px 0 18px}.quick-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:12px}.faction-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.faction-pick button{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:78px;background:#111e30;color:var(--card);border:1px solid var(--line);font-size:12px}.faction-pick button svg{width:25px;height:25px;color:var(--fc)}.faction-pick button.on{border-color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#111e30)}.faction-pick .note{font-size:10px}.start-main{display:flex;width:100%;align-items:center;justify-content:space-between;padding:17px 20px;font-size:17px;background:linear-gradient(100deg,#eed3a0,#d7b16c);color:#192133;min-height:61px}.start-main small{display:block;font-size:10px;font-weight:500;margin-top:4px}.home-nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}.home-nav button{text-align:left;background:#132035;color:var(--card);border:1px solid var(--line);padding:16px}.home-nav .note{display:block;font-size:10px;margin-top:5px}.home-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:14px}.home-links button{background:transparent;color:var(--mist);font-size:11px;padding:8px 12px}.resume{width:100%;margin-bottom:12px}.home-footer{text-align:center;margin-top:20px;font-size:10px;letter-spacing:.15em;color:#7d8fa8}
+/* Cards share one information hierarchy; board cards favor current state. */
+.card{--fc:#8cd1de;flex:0 0 auto;width:118px;height:165px;padding:9px;background:linear-gradient(160deg,#253548,#152235);color:#eef2f6;border:1px solid #3d5269;border-top:3px solid var(--fc);border-radius:10px;line-height:1.3;font-size:11px;box-shadow:0 4px 8px #0002;overflow:hidden;position:relative;transition:border-color .15s,background .15s}.card .cost{top:7px;left:8px;width:25px;height:25px;background:#0d1725;border:1px solid var(--fc);color:#fff;font-size:13px}.card .nm{font-size:12px;text-align:left;margin:34px 0 5px;line-height:1.25;min-height:29px;overflow-wrap:anywhere}.card .fac{position:absolute;top:12px;right:7px;margin:0;padding:0;font-size:9px;background:none!important;color:var(--fc)!important}.card .tx{text-align:left;color:#beccda;font-size:10px;line-height:1.5;min-height:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:45px}.card .st{bottom:7px;left:9px;right:9px;font-size:16px;align-items:center;line-height:1}.card .st small{font-size:9px;font-weight:500;margin-right:3px}.card .st .a{color:#ffa28a}.card .st .h{color:#a2dfc1}.card .cnt{top:auto;bottom:6px;right:6px;border-radius:4px;font-size:10px;padding:3px 5px;z-index:2;background:var(--gold);color:var(--ink)}.card:has(.cnt) .st{bottom:29px}.card:has(.cnt) .tx{-webkit-line-clamp:2;max-height:30px}.card .info{position:absolute;right:0;top:31px;width:34px;min-height:38px;padding:0;background:transparent;border:0;color:#adbed0;font-size:16px}.card:has(.info) .nm{padding-right:23px}.card.sel{border:2px solid var(--gold);background:linear-gradient(140deg,#594629,#182639)}.card.sel::after{content:'✓';position:absolute;top:6px;right:6px;background:var(--gold);color:#172133;border-radius:50%;width:22px;height:22px;text-align:center;font-weight:800;line-height:22px}.card.sel .fac{visibility:hidden}.card.target{border:2px solid var(--red);background:#392a2e}.card.playable{border-color:#8cc9bb;box-shadow:0 0 0 1px #8cc9bb25}.card.dim{opacity:.64;cursor:pointer}.card.exhausted{opacity:.66}.card.trump{background:linear-gradient(145deg,#554329,#1b2737);border-color:#c9a968}.card.evo{background:linear-gradient(145deg,#403451,#192b42)}.card.stealth{box-shadow:inset 0 0 0 1px #9fd9ff}.card.small{width:86px;height:125px;padding:7px}.card.small .nm{font-size:11px;margin-top:28px;min-height:29px}.card.small .cost{width:22px;height:22px;font-size:12px;top:5px;left:6px}.card.small .st{font-size:14px}.card.small .fac{font-size:9px;top:9px}.card.small .tx{display:block;font-size:10px;max-height:14px;white-space:nowrap;text-overflow:ellipsis}.card.small .info{top:26px}.card.back{border:1px solid #8b83b6;background:repeating-linear-gradient(45deg,#34334b 0 4px,#25263d 4px 8px)}.card.tiny{width:18px;height:25px;border-radius:4px;padding:0}.card.tiny .nm{display:none}.card-symbol{position:absolute;right:8px;bottom:34px;width:38px;height:38px;color:var(--fc);opacity:.13;pointer-events:none}
+.card-grid,#builderPool,#shieldPick,#pack,#poolBody .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px}.card-grid .card,#builderPool .card,#shieldPick .card,#pack .card,#poolBody .card{width:100%}.sticky-actions{position:sticky;bottom:0;z-index:6;background:#142137f5;backdrop-filter:blur(12px);padding:12px 10px calc(12px + var(--safe));border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;border-radius:12px 12px 0 0;margin:14px -8px -16px}.sticky-actions>button:first-child{flex:1}.selection-note{color:var(--gold);font-size:13px;white-space:nowrap}.tabs{gap:6px}.tabs button{padding:8px 12px}.builder{grid-template-columns:minmax(0,1fr) 300px}.builder>div{min-width:0}.builder-controls{display:none}.decklist div{min-height:44px;align-items:center;padding:8px;border-radius:5px}.decklist div>span:first-child{overflow-wrap:anywhere;min-width:0}.decklist div>span:last-child{flex-shrink:0}.curve{height:65px}.rules details{border-bottom:1px solid var(--line);padding:12px 0}summary{cursor:pointer;min-height:44px;line-height:44px}
+/* Battle: a stable player perspective, four lanes and a thumb-level action dock. */
+body[data-screen=scrBattle]{padding:0 18px;overflow:hidden}#scrBattle{height:100vh;height:100dvh;max-height:100dvh;min-height:0;display:grid;grid-template-rows:52px minmax(0,1fr) auto;gap:0;padding-top:env(safe-area-inset-top,0px)}.battle-header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);gap:10px}.battle-header h1{font-size:16px}.battle-header .note{font-size:10px}.battle-header button{min-height:40px;padding:6px 10px;font-size:11px}.battle-body{display:grid;grid-template-rows:auto minmax(82px,1fr) 34px auto minmax(82px,1fr) auto;gap:7px;min-height:0;max-width:800px;width:100%;margin:auto;height:100%;padding:10px 0 6px}.commander{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 10px;background:#142033;border:1px solid var(--line);border-radius:10px;min-width:0;min-height:48px}.commander.active{border-color:#7b7460;background:#242b33}.commander-info{display:flex;align-items:center;gap:8px;min-width:0}.commander-name{font-size:12px;font-weight:700}.commander-meta{font-size:10px;color:var(--mist);white-space:nowrap}.energy{background:none;color:var(--gold);font-size:16px;padding:0;margin:0;font-weight:750}.shield-status{display:flex;align-items:center;gap:8px}.shield-count{font-size:12px;color:var(--card);white-space:nowrap}.shield-pips{display:flex;gap:3px;align-items:center;max-width:132px;overflow:hidden}.shield-pip{width:12px;height:17px;background:#827fab;clip-path:polygon(0 0,100% 0,100% 68%,50% 100%,0 68%)}#meSide .shield-pip{background:var(--gold)}.no-shield{color:var(--red);font-size:11px}.shield-attack{border-color:var(--red);cursor:pointer;box-shadow:0 0 0 1px #fa8f7833}.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;min-width:0;min-height:0;align-items:stretch}.board .card{width:100%;height:100%;min-height:0;max-height:200px;padding:8px 10px;display:flex;flex-direction:column}.board .card .nm{font-size:14px;margin-top:32px;margin-bottom:5px;min-height:18px;padding-right:0}.board .card .tx{font-size:11px;-webkit-line-clamp:2;max-height:32px;min-height:0;margin-bottom:24px}.board .card .fac{font-size:10px;top:13px}.board .card .st{font-size:21px;bottom:10px}.board .card .info{display:none}.board .card .cost{top:9px;left:9px}.board .card-symbol{width:60px;height:60px;bottom:30px}.slot{border:1px dashed #2b3d53;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:200;color:#374b61;background:linear-gradient(145deg,#101b2c5c,#0b121e)}.state-tag{position:absolute;top:9px;right:7px;font-size:10px;color:var(--fc);background:#102132;border-radius:4px;padding:3px 5px}.board .card .fac{display:none}.board .card.sel::after{display:none}.board .card.sel .state-tag{color:var(--gold)}.board .card.target .state-tag{color:var(--red)}.msg{display:flex;align-items:center;justify-content:center;margin:0;font-size:12px;line-height:1.4;text-align:center;color:var(--gold);padding:0 4px;min-height:0}.msg.thinking::before{content:'';width:9px;height:9px;border-radius:50%;background:var(--cyan);margin-right:9px;animation:pulse 1s infinite}.hand-area{min-width:0;border-top:1px solid var(--line);padding-top:6px}.hand-head{display:flex;align-items:center;justify-content:space-between;margin:0 3px 2px;font-size:12px}.hand-head .note{font-size:10px}.hand-scroll{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding:6px 2px 8px;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#506077 transparent}.hand-scroll .card{width:106px;height:144px;scroll-snap-align:start}.hand-scroll .card .nm{margin-top:31px;min-height:28px;font-size:12px}.hand-scroll .card .tx{-webkit-line-clamp:2;max-height:29px}.hand-scroll .card .info{display:none}.hand-scroll .card .st{font-size:17px}.dock{display:flex;gap:8px;align-items:center;padding:8px 0 calc(10px + var(--safe));background:#0b111ef5;border-top:1px solid var(--line);max-width:800px;width:100%;margin:auto}.dock button{min-height:46px}.dock .primary-action{margin-left:auto;min-width:145px}.dock .aux-action{font-size:11px;padding:9px 12px;color:#c0cdde}.dock .face{background:var(--red)}.latest-event{color:#a9bacd;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}.battle-footer-meta{display:flex;justify-content:space-between;align-items:center}#endBox{display:flex;gap:8px;width:100%}#endBox button:first-child{flex:1}#think{white-space:pre-wrap;overflow-wrap:anywhere}.log{max-height:none;border:0;line-height:1.75}.log p{padding:7px 0;border-bottom:1px solid #ffffff0d;font-size:12px}.log p.hi{color:var(--gold)}
+/* Native dialog supplies focus containment, Escape and modal background isolation. */
+dialog{color:var(--card);border:1px solid #384b65;background:#122037;border-radius:20px;padding:0;max-width:480px;width:calc(100% - 28px);max-height:85vh;max-height:85dvh;box-shadow:0 20px 80px #0009;overflow:auto;overscroll-behavior:contain}dialog::backdrop{background:#030814bc;backdrop-filter:blur(4px)}.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 8px;position:sticky;top:0;background:#122037;z-index:2}.sheet-head h2{font-size:19px;margin:0}.sheet-close{background:#1e3049;color:var(--card);font-size:20px;min-width:44px;padding:4px}.sheet-body{padding:4px 20px 18px;font-size:14px;line-height:1.85}.sheet-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px calc(16px + var(--safe));background:#122037;border-top:1px solid var(--line);position:sticky;bottom:0;z-index:2}.sheet-actions button{flex:1}.detail-banner{display:flex;align-items:center;gap:15px;padding:16px;background:linear-gradient(125deg,#283c53,#172a40);border-radius:12px;margin:8px 0 16px}.detail-banner svg{width:54px;height:54px;flex-shrink:0;color:var(--fc)}.detail-type{font-size:11px;color:var(--fc)}.detail-stats{display:flex;gap:20px;font-size:20px;font-weight:700}.detail-stats small{font-size:10px;color:var(--mist);margin-right:5px}.detail-effect{white-space:pre-line;font-size:15px;color:#e1e7ef}.keyword-notes{font-size:12px;line-height:1.8;color:#bac8d9;margin-top:18px}.keyword-notes p{margin:8px 0}.keyword-notes b{color:var(--gold)}.unavailable{font-size:12px;background:#ffffff07;padding:10px;border-radius:8px;color:#b7c3d5}.combat-preview{display:grid;grid-template-columns:1fr 30px 1fr;gap:6px;align-items:center;text-align:center;margin:18px 0}.combat-preview>div{background:#1c3048;border-radius:12px;padding:14px 6px}.combat-preview b{font-size:23px}.danger{color:var(--red)}.toast{position:fixed;left:50%;bottom:calc(22px + var(--safe));transform:translateX(-50%);background:#e6d0a5;color:#132036;padding:12px 18px;border-radius:10px;font-size:12px;max-width:90vw;z-index:50;box-shadow:0 4px 25px #0005}.on{border-color:var(--gold)!important}.opt button.on{outline:none;box-shadow:0 0 0 1px var(--gold)}
+@keyframes pulse{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(max-width:720px){html{scrollbar-gutter:auto}body{padding:12px 12px 26px}.panel{padding:13px;border-radius:12px}.top{position:sticky;top:0;z-index:7;background:#0b111ef5;backdrop-filter:blur(10px);padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:12px}.top h1{font-size:17px}.top button{font-size:11px;padding:8px 12px}.brandbar{padding-bottom:12px}.hero{padding:36px 22px 23px;border-radius:17px}.hero h1{font-size:34px}.hero .lede{font-size:13px;margin-bottom:20px}.hero-bottom{gap:10px;font-size:10px}.quick-panel{padding:18px 0 14px}.faction-pick button{padding:9px 4px;min-height:76px}.home-nav button{padding:13px 12px}.home-links button{font-size:11px}.builder{grid-template-columns:1fr}.builder-controls{display:flex;position:sticky;top:68px;z-index:5;background:#101c2b;padding:8px;gap:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px}.builder-controls button{flex:1}.builder[data-pane=cards]>div:last-child,.builder[data-pane=deck]>div:first-child{display:none}.card-grid,#builderPool,#shieldPick,#pack,#poolBody .row{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.card-grid .card,#builderPool .card,#shieldPick .card,#pack .card,#poolBody .card{height:158px}.sticky-actions{margin:12px -8px -13px;padding:10px 6px calc(10px + var(--safe));gap:6px}.sticky-actions button{padding:10px;font-size:12px}.decklist div{gap:6px}.decklist div>span:last-child button{padding:8px}.opt>select{max-width:100%}.pass{padding:80px 12px}.title{margin:24px 0}
+body[data-screen=scrBattle]{padding:0 8px}#scrBattle{grid-template-rows:44px minmax(0,1fr) auto}.battle-header{gap:6px}.battle-header h1{font-size:14px}.battle-header .note{font-size:10px}.battle-header button{min-height:38px}.battle-body{padding:5px 0 2px;gap:5px;grid-template-rows:44px minmax(82px,1fr) 31px 44px minmax(82px,1fr) auto}.commander{min-height:44px;padding:5px 8px}.commander-info{gap:7px}.commander-name{font-size:11px}.commander-meta{font-size:9px}.energy{font-size:16px}.shield-status{gap:6px}.shield-count{font-size:11px}.shield-pips{max-width:100px}.shield-pip{width:10px;height:15px}.board{gap:5px}.board .card{border-radius:9px;padding:6px}.board .card .nm{font-size:11px;line-height:1.3;margin:29px 0 3px;min-height:27px}.board .card .cost{top:5px;left:5px;width:23px;height:23px;font-size:12px}.board .card .st{font-size:18px;bottom:7px;left:6px;right:6px}.board .card .st small{font-size:8px;margin-right:1px}.board .card .tx{font-size:9px;line-height:1.3;-webkit-line-clamp:2;max-height:25px;margin-bottom:22px}.board .card-symbol{width:33px;height:33px;bottom:28px}.state-tag{top:8px;right:4px;font-size:9px;padding:2px}.msg{font-size:11px}.hand-head{font-size:11px}.hand-scroll{gap:6px;padding:4px 1px 6px}.hand-scroll .card{width:93px;height:128px}.hand-scroll .card .cost{width:22px;height:22px;top:6px;left:6px;font-size:12px}.hand-scroll .card .fac{font-size:9px;right:5px;top:11px}.hand-scroll .card .nm{font-size:11px;margin-top:27px;min-height:26px}.hand-scroll .card .tx{font-size:10px;line-height:1.4}.hand-scroll .card .st{font-size:16px;left:7px;right:7px}.dock{padding:6px 0 calc(7px + var(--safe));gap:6px}.dock button{font-size:12px;padding:9px 10px}.dock .primary-action{min-width:132px;flex:1;max-width:235px}.dock .aux-action{font-size:11px;padding:9px 11px}.latest-event{max-width:200px;font-size:9px}dialog{margin:auto 0 0;width:100%;max-width:none;max-height:86dvh;border-radius:20px 20px 0 0;border-bottom:0}.sheet-head{padding:14px 16px 6px}.sheet-body{padding:3px 18px 16px}.sheet-head h2{font-size:19px}.sheet-actions{padding-left:16px;padding-right:16px}}
+@media(max-height:720px) and (max-width:720px){.battle-body{grid-template-rows:40px minmax(78px,1fr) 27px 40px minmax(78px,1fr) auto;gap:4px}.commander{min-height:40px}.hand-scroll .card{height:115px;width:89px}.hand-scroll .card .tx{-webkit-line-clamp:1;max-height:14px}.hand-scroll .card .nm{min-height:26px;margin-bottom:2px}.board .card .tx{display:none}.board .card .nm{margin-top:27px;font-size:11px}.board .card .st{font-size:18px}.hero{padding-top:24px}.hero .lede{margin:12px 0}}
+@media(max-width:350px){body{padding-left:9px;padding-right:9px}.hero h1{font-size:30px}.hero{padding-left:18px;padding-right:18px}.shield-pips{max-width:60px}.shield-pip{width:8px;height:13px}.commander-name{font-size:10px}.commander-meta{font-size:9px}.board .card .st small{display:none}.state-tag{font-size:8px}.dock .aux-action{padding:8px}.card .fac{font-size:8px}.card .nm{font-size:11px}}
+@media(max-height:510px){body[data-screen=scrBattle]{overflow:auto}#scrBattle{height:auto;max-height:none;min-height:100dvh;grid-template-rows:44px auto auto}.battle-body{height:auto;grid-template-rows:44px 95px 28px 44px 95px auto}.dock{position:sticky;bottom:0}.hand-scroll .card{height:112px}.board .card .tx{display:none}}
+
+.card .info{width:44px;min-height:44px}.card .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.selected-strip{display:flex;gap:6px;overflow-x:auto;padding:5px 0 8px;scrollbar-width:thin}.selected-strip button{flex:0 0 auto;white-space:nowrap;border-color:#b59662;color:var(--gold)}
+@media(max-width:720px){#swapOpp,#swapMine,#towerDeckView,#myDeck{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#swapOpp .card,#swapMine .card,#towerDeckView .card,#myDeck .card{width:100%}}
+
+.card{touch-action:manipulation}.card.static{cursor:pointer}
+
+</style>
+</head>
+<body>
+
+<section id="scrTitle"><div class="home">
+<div class="brandbar"><span>SEIIKI / STAR SECTOR</span><span class="version">v0.16</span></div>
+<div class="hero"><p class="eyebrow">PICK YOUR FLEET. BREAK THEIR LINE.</p><h1>星域ドラフト</h1><p class="lede">5枚の防衛線。その先へ。<br>選んだ艦と、次の一手で勝負を決める。</p><div class="hero-bottom"><span class="shield-motif" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span>CPU対戦 / 1台で2人 / 約10分</span></div></div>
+<div class="quick-panel"><button id="resumeBtn" class="ghost resume hidden" onclick="resumeBattle()">中断した対戦を再開 →</button><div class="quick-label"><b>まずは、好きな勢力で。</b><span class="note">デッキ準備はおまかせ</span></div><div class="faction-pick" id="quickFactions"></div><button class="start-main" onclick="quickStart()"><span>すぐに対戦<small>自動構築デッキでCPUに挑戦</small></span><span aria-hidden="true">↗</span></button></div>
+<div class="home-nav"><button onclick="startGame()">デッキから対戦<span class="note" id="modeLabel"></span></button><button onclick="openTower()">バトルタワー<span class="note" id="towerLabel">勝ち抜きとカード交換</span></button><button onclick="openBuilder()">デッキ構築<span class="note">30枚で、自分の戦術を作る</span></button><button onclick="go('scrSettings')">対戦設定<span class="note">CPUの強さ・ピック・2人対戦</span></button></div>
+<div class="home-links"><button onclick="showQuickRules()">はじめての遊び方</button><button onclick="showPool()">カード図鑑</button><button onclick="go('scrRules')">詳細ルール</button><button onclick="go('scrSim')">バランス検証</button></div><p class="home-footer">FOUR FACTIONS. ONE LAST LINE.</p></div></section>
+
+<section id="scrSettings" class="hidden">
+  <div class="top"><h1>設定</h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <div class="panel"><h2>ゲーム形式</h2>
+    <div class="opt"><button id="gtDeck" onclick="setGT('deck')">構築デッキからピック</button><button id="gtDraft" onclick="setGT('draft')">プール全体からドラフト</button></div>
+    <p class="note">構築：デッキ構築で作った30枚から24枚をピックして対戦。ドラフト：全カードプールからその場でピック。</p>
+    <div class="opt" id="pickOpt">ピック方式：<button id="pkRandom" onclick="setPick('random')">ランダムに24枚</button><button id="pkPack" onclick="setPick('pack')">5枚から4枚×6回</button></div></div>
+  <div class="panel"><h2>使うカード</h2>
+    <div class="opt"><button id="set1" onclick="setSetsUI(1)">第1弾のみ</button><button id="set12" onclick="setSetsUI(2)">第1弾＋第2弾</button></div>
+    <p class="note">第2弾：毒・覚醒・7〜8コストの超大型を追加。カードプール、デッキ構築、CPUの構築、バトルタワー、AI対戦すべてに効く。</p></div>
+  <div class="panel"><h2>デッキ</h2>
+    <div class="opt">自分のデッキ <select id="selMyDeck"></select></div>
+    <div class="opt">相手のデッキ <select id="selCpuDeck"><option value="auto">CPUが自動で組む（ランダムな勢力）</option></select></div>
+    <p class="note">相手のデッキに自分の保存デッキを指定することもできる。人間同士のときは、相手デッキがプレイヤー2のデッキになる。</p></div>
+  <div class="panel"><h2>対戦相手</h2>
+    <div class="opt"><button id="optCpu" onclick="setMode('cpu')">CPU</button><button id="optHuman" onclick="setMode('human')">人間（1台で交代）</button></div></div>
+  <div class="panel"><h2>CPUの強さ</h2>
+    <div class="opt"><button id="lv1" onclick="setLevel(1)">初級</button><button id="lv2" onclick="setLevel(2)">中級</button><button id="lv3" onclick="setLevel(3)">上級</button><button id="lv4" onclick="setLevel(4)">戦略級</button></div>
+    <p class="note">初級・中級は自分の行動の組み合わせを探索。上級は相手の返し、戦略級はさらに次の自分のターンまで読みます。見えない手札・罠は公開情報から推定します。探索の深さは局面と端末、思考時間によって変わります。</p></div>
+  <div class="panel"><h2>CPUの思考時間</h2><div class="opt"><label for="thinkTime">1ターンの計算予算</label><select id="thinkTime"><option value="1000">短め · 1秒</option><option value="3000" selected>標準 · 3秒</option><option value="6000">じっくり · 6秒</option></select></div><p class="note">上級・戦略級に適用。行動のたびに読み直します。動作の演出時間は含みません。</p></div><div class="panel"><h2>試合の長さ</h2>
+    <div class="opt"><button id="lim10" onclick="setLimit(10)">10ターン</button><button id="lim12" onclick="setLimit(12)">12ターン</button><button id="lim14" onclick="setLimit(14)">14ターン</button></div></div>
+</section>
+
+<section id="scrBuilder" class="hidden">
+  <div class="top"><h1>デッキ構築 <span class="note">30枚</span></h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <div class="builder-controls"><button id="showCards" class="ghost on" onclick="builderPane('cards')">カードを選ぶ</button><button id="showDeck" class="ghost" onclick="builderPane('deck')">デッキ <span id="mobileCount">0</span>/30</button></div><div class="builder" data-pane="cards">
+    <div>
+      <div class="panel">
+        <div class="opt tabs" id="facTabs"></div>
+        <p class="note">タップで1枚追加。ⓘで効果を確認。右下はデッキ内の枚数／上限。</p>
+        <div class="row" id="builderPool"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="opt"><input id="deckName" placeholder="デッキ名" style="width:100%"></div>
+        <div class="note">枚数 <span id="bCount">0</span>/30</div>
+        <div class="curve" id="bCurve"></div>
+        <div class="decklist" id="bList" style="margin-top:20px"></div>
+        <div class="opt" style="margin-top:10px"><button id="bSave" onclick="saveDeck()">保存</button><button class="ghost sm" onclick="clearDeck()">空にする</button><button class="ghost sm" onclick="autoFill()">CPUに組ませる</button></div>
+      </div>
+      <div class="panel">
+        <h2>保存したデッキ</h2>
+        <div class="decklist" id="savedList"></div>
+        <div class="opt" style="margin-top:8px"><button class="ghost sm" onclick="exportDeck()">テキストで書き出す</button><button class="ghost sm" onclick="importDeck()">テキストから読み込む</button></div>
+        <textarea id="deckText" rows="3" style="width:100%;font-size:11px" placeholder="書き出し／読み込み用"></textarea>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="scrTower" class="hidden">
+  <div class="top"><h1>バトルタワー</h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <div class="panel">
+    <p class="note">完全ランダムな30枚のデッキで出発。勝つたびに相手のデッキから最大5枚をもらって自分のデッキを組み替えられる。相手も階が上がるごとにデッキを洗練させ、AIも強くなる（1〜2階：初級、3〜5階：中級、6〜9階：上級、10階から：戦略級）。負けたら終わり。</p>
+    <div id="towerStatus"></div>
+    <div class="opt" style="margin-top:10px"><button id="towerGo" onclick="towerChallenge()">挑戦する</button><button class="ghost" onclick="towerViewDeck()">自分のデッキを見る</button><button class="ghost sm" onclick="towerReset()">最初からやり直す</button></div>
+    <div class="row" id="towerDeckView" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<section id="scrSwap" class="hidden">
+  <div class="top"><h1>カード交換</h1></div>
+  <div class="panel">
+    <p class="note">相手のデッキから最大5枚をもらえる。もらった枚数と同じだけ、自分のデッキから外す（30枚を保つ）。同名カードの上限は守る。</p>
+    <div class="note">相手のデッキ（タップでもらう） 選択 <span id="swapTake">0</span>/5</div>
+    <div class="row" id="swapOpp"></div>
+    <div class="note" style="margin-top:10px">自分のデッキ（タップで外す） 外す <span id="swapDrop">0</span></div>
+    <div class="row" id="swapMine"></div>
+    <div class="sticky-actions"><button id="swapBtn" onclick="swapConfirm()">この内容で次の階へ</button><button class="ghost" onclick="swapSkip()">交換しない</button></div>
+  </div>
+</section>
+
+<section id="scrPool" class="hidden">
+  <div class="top"><h1>カードプール <span class="note" id="poolCount"></span></h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <p class="note">右下の数字はプール内の枚数（＝デッキに入れられる上限）。金色は切り札、薄紫は進化。</p>
+  <div id="poolBody"></div>
+</section>
+
+<section id="scrRules" class="hidden">
+  <div class="top"><h1>ルール</h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <div class="panel rules">
+    <h2>勝ち方（これだけ覚えれば遊べる）</h2>
+    <p>お互いに「防衛線」というカードが5枚、裏向きで並んでいる。艦で相手本体を攻撃すると防衛線が1枚めくれて消える。<b>防衛線が0枚の相手を、もう一度艦で攻撃したら勝ち。</b></p>
+    <p>ただし、めくれた防衛線は相手の手札に入る（手札上限8枚。満杯なら墓地へ）（相手は殴られるほど手が増える）。罠だった場合はその場で発動する。</p>
+  </div>
+  <div class="panel rules">
+    <h2>自分のターンにやること（この順番）</h2>
+    <p><b>1. 始まり（自動）</b>：山札から1枚引く（先手の1ターン目だけ引かない）。エネルギー⚡がターン数と同じだけ手に入る（1ターン目は1、2ターン目は2…最大8）。<b>前のターンに使わなかった⚡は最大3まで持ち越せる</b>ので、貯めれば7〜8コストの超大型も出せる。盤面の艦が全員「攻撃できる状態」に戻り、覚醒・毒・再生が処理される。</p>
+    <p><b>2. カードを出す</b>：手札をタップして詳細を開き、「使う」を選ぶ。左上の数字がコストで、⚡を払う。艦は盤面に出る（最大4体）。呪文は使い切り。罠は自分の防衛線の上に裏向きで足す。対象を選ぶカードは、詳細画面で「使う」を選んでから対象をタップ。</p>
+    <p><b>3. 攻撃する</b>：自分の艦をタップして攻撃を選ぶ → 相手の艦をタップするか「防衛線をブレイク」ボタン。1体につき1ターン1回。<b>このターンに出したばかりの艦は攻撃できない</b>（速攻を除く）。攻撃した艦は薄く表示される。</p>
+    <p><b>4. ターン終了</b>ボタン。2と3は好きな順番で何度でも（⚡と攻撃回数が許す限り）。余った⚡は3まで次のターンに持ち越し。</p>
+    <p>おまけ：1ターンに1度だけ「手札を燃やして⚡+1」できる。いらないカードを資源に変える。</p>
+  </div>
+  <div class="panel rules">
+    <h2>艦同士の戦闘</h2>
+    <p>艦には<span style="color:var(--red)">攻撃力</span>と<span style="color:var(--green)">体力</span>がある（カード下の赤と緑の数字）。自分の艦Aで相手の艦Bを攻撃すると、<b>AはBに攻撃力ぶんのダメージ、BもAに攻撃力ぶんのダメージ</b>を同時に与える。体力が0以下になった艦は撃沈して墓地へ。<b>受けたダメージはターンをまたいでも残る。</b></p>
+    <p>例：攻4／体力3の艦で、攻2／体力5の艦を攻撃 → 相手は体力5→1で生き残り、自分は体力3→1で生き残る。次のターンに攻1の艦で殴ればとどめになる。</p>
+    <p>相手の盤面に<span class="kw">守護</span>の艦がいるときは、その艦しか攻撃できない（本体も攻撃できない）。守護は壁。</p>
+    <p>攻撃力の内訳＝基本値＋強化（+X/+X）＋一時（総攻撃など）＋勢力ボーナス＋オーラ。戦闘のたびにログに「攻○（内訳）／体力○→○」と出るので、計算が気になったらそこを見る。</p>
+  </div>
+  <div class="panel rules">
+    <h2>本体への攻撃（防衛線のブレイク）</h2>
+    <p>相手に守護がいなければ、艦で相手本体を攻撃できる。防衛線が1枚めくれる。</p>
+    <p>めくれたカードが<b>艦や呪文</b>なら相手の手札へ。<b>罠</b>なら即発動（迎撃網なら攻撃した艦に4ダメージ、など）して墓地へ。</p>
+    <p><span class="kw">W</span>の艦は1回の攻撃で2枚めくる。<span class="kw">貫通</span>の艦は、相手の艦を倒したときの余ったダメージで防衛線を1枚めくる。</p>
+    <p>防衛線が0枚の相手を攻撃したら、その瞬間に勝ち。互いに規定ターン（設定、初期12）を終えたら、防衛線の多い側の勝ち。</p>
+  </div>
+  <div class="panel rules">
+    <h2>試合前の準備</h2>
+    <p>デッキ構築：カードプールから30枚のデッキを組む（同名は枚数上限まで、切り札は1枚）。</p>
+    <p>ピック：デッキから24枚を取り出す（ランダム、または5枚から4枚を6回）。</p>
+    <p>防衛線の配置：24枚から5枚を選んで防衛線にする。残り19枚が山札。罠を仕込むか、使わないカードを置くかは自由。並び順はランダムで、自分でも順番は分からない。</p>
+    <p>先手後手はランダム。初手4枚。先手は1ターン目のドローなし。後手は初手5枚で、1〜2ターン目は⚡+1。</p>
+  </div>
+  <div class="panel rules">
+    <h2>キーワード</h2>
+    <p><span class="kw">守護</span>：相手はこの艦しか攻撃できない。／<span class="kw">貫通</span>：艦を倒した余りで防衛線を1枚割る。／<span class="kw">速攻</span>：出したターンから攻撃できる。／<span class="kw">連撃</span>：1ターンに2回攻撃できる。／<span class="kw">W</span>：防衛線を2枚割る。</p>
+    <p><span class="kw">迎撃</span>：攻撃されたとき、先に反撃する。攻撃側がそれで撃沈すれば、この艦は無傷。／<span class="kw">回避</span>：初めて攻撃されたときのダメージを受けない（1回だけ）。／<span class="kw">再生</span>：自分のターンの始めに体力が全回復。／<span class="kw">潜伏</span>：自分が攻撃するまで、相手の攻撃や呪文の対象にならない。／<span class="kw">不死</span>：一度だけ撃沈を免れ、体力1で残る。</p>
+    <p><span class="kw">進化</span>：同じ勢力の味方の艦の上に出す（元の艦は墓地へ）。出したターンから攻撃できる。／<span class="kw">登場時</span>：出したとき発動。／<span class="kw">攻撃時</span>：攻撃するたび発動。／<span class="kw">撃沈時</span>：墓地に行くとき発動（相手のターン中でも）。</p>
+    <p><span class="kw">毒</span>（第2弾）：毒の艦と戦闘した相手は毒になる。毒の艦は自分のターンの始めに1ダメージを受け続ける。／<span class="kw">覚醒</span>（第2弾）：自分のターンの始めに+1/+1され続ける。放っておくと手がつけられなくなる。／焼却（第2弾）：防衛線を「割る」のではなく消す。手札に入らず罠も発動しない。</p>
+    <p>麻痺：次の自分のターン、その艦は攻撃できない。／墓地：撃沈した艦・使った呪文・発動した罠が溜まる。深淵の蘇生で戻せる。</p>
+  </div>
+  <div class="panel rules">
+    <h2>勢力と勢力ボーナス</h2>
+    <p>同じ勢力の艦を<b>2体以上</b>盤面に並べていると発動する。</p>
+    <p>艦隊＝速さと火力。<b>味方の艦隊の攻撃+1。</b></p>
+    <p>機械＝硬さと反撃、防衛線の補充。<b>守護を持つ味方の機械が受けるダメージ-1（最低1）。</b></p>
+    <p>星霊＝ドローと幻惑、潜伏。<b>呪文と罠のコスト-1。</b></p>
+    <p>深淵＝手札破壊、蘇生、不死。<b>自分の艦が撃沈するたび1枚引く。</b></p>
+    <p>受けるダメージの計算：攻撃力 → 機械ボーナス（守護のみ）で-1 → 回避なら0。</p>
+  </div>
+</section>
+
+<section id="scrSim" class="hidden">
+  <div class="top"><h1>バランス検証</h1><button class="ghost" onclick="go('scrTitle')">戻る</button></div>
+  <div class="panel">
+    <h2>カードバランス（旧中級AI同士）</h2><p class="note">v0.15の自動対戦エンジンを使う開発用ツールです。対戦画面の新CPUとは探索方法が異なります。長時間の計算はPCで行ってください。</p>
+    <div class="opt"><select id="simMode"><option value="deck">CPU自動構築デッキ同士</option><option value="draft">プールからドラフト</option></select><button onclick="runSim(200)">200試合</button><button onclick="runSim(600)">600試合</button></div>
+    <pre id="simOut"></pre>
+  </div>
+  <div class="panel">
+    <h2>カードの強さ表を更新</h2>
+    <p class="note">CPUのデッキ構築（自動構築・バトルタワーの洗練）が使う「入っていたときの勝率」の表。カードを増やしたり数値を変えたら回し直す。結果はこのブラウザに保存され、次回起動時も使われる（初期値に戻すボタンあり）。1500試合で2〜3分。</p>
+    <div class="opt"><button onclick="runStrength(600)">600試合</button><button onclick="runStrength(1500)">1500試合</button><button class="ghost sm" onclick="resetStrength()">初期値に戻す</button><button class="ghost sm" onclick="exportStrength()">JSONを書き出す</button></div>
+    <pre id="strOut"></pre>
+  </div>
+  <div class="panel">
+    <h2>評価関数の重みを自己対戦で調整</h2>
+    <p class="note">重みを1つずつ×1.5／×0.67して現行と対戦させ、勝率55%超なら採用する（1周で約30分）。結果の重みはこの画面に表示するので、良ければファイルの EVAL_W に書き写す。</p>
+    <div class="opt"><button onclick="runTune()">1周まわす</button></div>
+    <pre id="tuneOut"></pre>
+  </div>
+  <div class="panel">
+    <h2>旧探索AIの強さ比べ</h2>
+    <div class="opt">先手 <select id="lvA"><option value="1">初級</option><option value="2" selected>中級</option><option value="3">上級</option></select>
+      後手 <select id="lvB"><option value="1">初級</option><option value="2">中級</option><option value="3" selected>上級</option></select>
+      <button onclick="runVs(100)">100試合</button></div>
+    <pre id="vsOut"></pre>
+  </div>
+</section>
+
+<section id="scrPass" class="hidden">
+  <div class="pass"><h2 id="passTitle"></h2><p class="note">準備ができたら押す</p><button id="passBtn">はじめる</button></div>
+</section>
+
+<section id="scrDraft" class="hidden">
+  <div class="top"><h1 id="draftTitle">ピック 1 / 6</h1><button class="ghost" onclick="askQuit()">タイトルへ</button></div>
+  <div class="panel">
+    <p class="note" id="draftWho"></p>
+    <p class="note" id="draftHint"></p>
+    <div class="row" id="pack"></div>
+    <div class="sticky-actions"><span id="pickCount" class="selection-note"></span><button id="pickBtn" disabled>この3枚を取る</button></div>
+    <div style="margin-top:12px"><div class="note">ピック済み（<span id="deckCount">0</span>/24）</div><div class="row" id="myDeck"></div></div>
+  </div>
+</section>
+
+<section id="scrShield" class="hidden">
+  <div class="top"><h1>防衛線の配置</h1><button class="ghost" onclick="askQuit()">タイトルへ</button></div>
+  <div class="panel">
+    <p class="note" id="shieldWho"></p>
+    <p class="note">24枚から5枚を選んで防衛線にする。残り19枚が山札。罠は防衛線から出ると発動する。並びはランダム。</p>
+    <div id="shieldSummary" class="selected-strip" aria-label="選択済みの防衛線"></div><p class="note">選択済みのカードは、もう一度タップで外せます。</p><div class="row" id="shieldPick"></div>
+    <div class="sticky-actions"><span id="shieldCount" class="selection-note"></span><button id="shieldBtn" disabled>配置して対戦へ</button> <button class="ghost" onclick="autoShield()">おまかせ</button></div>
+  </div>
+</section>
+
+<section id="scrBattle" class="hidden">
+<header class="battle-header"><div><h1 id="battleWho">星域ドラフト</h1></div><span id="turnNo" class="note"></span><button class="ghost" onclick="showBattleMenu()">メニュー</button></header>
+<div class="battle-body">
+<div class="commander" id="opSide"><div class="commander-info"><span id="opEnergy" class="energy"></span><div><div class="commander-name" id="opName"></div><div class="commander-meta">手札 <span id="opHand"></span> · 山 <span id="opDeck"></span> · 墓 <span id="opGrave"></span></div></div></div><div class="shield-status"><span class="shield-count">防衛 <b id="opShieldN"></b></span><div class="shield-pips" id="opShields" aria-hidden="true"></div></div></div>
+<div class="board" id="opBoard" aria-label="相手の盤面"></div>
+<div class="msg" id="msg" role="status" aria-live="polite"></div>
+<div class="commander active" id="meSide"><div class="commander-info"><span id="meEnergy" class="energy"></span><div><div class="commander-name" id="meName"></div><div class="commander-meta">山札 <span id="meDeck"></span> · 墓地 <span id="meGrave"></span></div></div></div><div class="shield-status"><span class="shield-count">防衛 <b id="meShieldN"></b></span><div class="shield-pips" id="meShields" aria-hidden="true"></div></div></div>
+<div class="board" id="meBoard" aria-label="自分の盤面"></div>
+<div class="hand-area"><div class="hand-head"><span>手札 <b id="handN"></b><span class="note"> / 8</span></span><span class="note">タップで詳細 · 横にスワイプ →</span></div><div class="hand-scroll" id="hand" aria-label="手札"></div><div class="battle-footer-meta"><span id="latestEvent" class="latest-event"></span><span class="note" style="font-size:9px">赤＝攻撃 / 緑＝体力</span></div></div>
+</div>
+<div class="dock"><button id="logBtn" class="ghost aux-action">ログ</button><button id="burnBtn" class="ghost aux-action">燃やす ⚡+1</button><button id="cancelBtn" class="ghost aux-action hidden">取消</button><button id="endBtn" class="primary-action">ターン終了</button><button id="faceBtn" class="face primary-action hidden">防衛線をブレイク</button><div id="endBox" class="hidden"><button id="againBtn">もう一度</button><button class="ghost" onclick="askQuit()">タイトルへ</button></div></div>
+<div id="log" class="hidden"></div><pre id="think" class="hidden"></pre>
+</section>
+<dialog id="sheet" aria-labelledby="sheetTitle"><div class="sheet-head"><h2 id="sheetTitle"></h2><button id="sheetClose" class="sheet-close" aria-label="閉じる">×</button></div><div id="sheetBody" class="sheet-body"></div><div id="sheetActions" class="sheet-actions"></div></dialog><div id="toast" class="toast hidden" role="status"></div>
+
+<script id="engine">
+// ===== カードデータ =====
+// t: 'c'=艦 's'=呪文 'r'=罠 / f: 勢力 / n: プール枚数 / trump: 切り札 / W: 2枚ブレイク / evo: 進化
+// kw: 守護 貫通 速攻 連撃 迎撃 回避 再生 潜伏 不死
+// enter/die/onatk/eff: 効果 {k,v,tgt,...}。tgt: enemy|ally|evo。tf: {maxCost} 対象の制限
+const FACTIONS=['艦隊','機械','星霊','深淵'];
+const CARDS=[
+ // ── 艦隊：速さと火力。早く殴って防衛線を削る ──
+ {id:'patrol',nm:'哨戒艇',f:'艦隊',t:'c',cost:1,atk:1,hp:1,kw:['速攻'],n:3},
+ {id:'scout',nm:'偵察艇',f:'艦隊',t:'c',cost:1,atk:2,hp:1,kw:['速攻'],n:2},
+ {id:'kamikaze',nm:'特攻艇',f:'艦隊',t:'c',cost:1,atk:1,hp:1,kw:[],die:{k:'dmgrand',v:2},n:2},
+ {id:'courier',nm:'伝令艇',f:'艦隊',t:'c',cost:1,atk:1,hp:1,kw:[],onatk:{k:'dmgrand',v:1},n:2},
+ {id:'escort',nm:'護衛艦',f:'艦隊',t:'c',cost:2,atk:3,hp:2,kw:[],n:3},
+ {id:'raider',nm:'強襲艇',f:'艦隊',t:'c',cost:2,atk:3,hp:1,kw:['貫通'],n:2},
+ {id:'gunship',nm:'砲撃艇',f:'艦隊',t:'c',cost:2,atk:2,hp:1,kw:[],enter:{k:'dmg',v:1,tgt:'enemy'},n:2},
+ {id:'ember',nm:'焔の艇',f:'艦隊',t:'c',cost:2,atk:2,hp:2,kw:['速攻'],n:2},
+ {id:'sweepboat',nm:'掃討艇',f:'艦隊',t:'c',cost:2,atk:2,hp:2,kw:[],onatk:{k:'dmgrand',v:1},n:2},
+ {id:'gunboat',nm:'砲艦',f:'艦隊',t:'c',cost:3,atk:3,hp:2,kw:[],enter:{k:'dmg',v:2,tgt:'enemy'},n:2},
+ {id:'banner',nm:'旗手',f:'艦隊',t:'c',cost:3,atk:2,hp:3,kw:[],enter:{k:'allatk',v:1},n:2},
+ {id:'assault',nm:'突撃艦',f:'艦隊',t:'c',cost:3,atk:4,hp:2,kw:['速攻'],n:2},
+ {id:'breaker',nm:'突破艦',f:'艦隊',t:'c',cost:3,atk:3,hp:3,kw:['貫通'],n:2},
+ {id:'drill',nm:'艦隊教官',f:'艦隊',t:'c',cost:3,atk:2,hp:3,kw:[],aura:{f:'艦隊',atk:1},n:2},
+ {id:'flak',nm:'弾幕艦',f:'艦隊',t:'c',cost:3,atk:2,hp:4,kw:[],onatk:{k:'dmgrand',v:2},n:2},
+ {id:'twin',nm:'双胴艦',f:'艦隊',t:'c',cost:4,atk:3,hp:3,kw:['連撃'],n:2},
+ {id:'cruiser',nm:'巡洋艦',f:'艦隊',t:'c',cost:4,atk:4,hp:4,kw:[],n:2},
+ {id:'gale',nm:'疾風艦',f:'艦隊',t:'c',cost:4,atk:5,hp:2,kw:['速攻'],n:2},
+ {id:'crimson',nm:'紅蓮の突撃艦',f:'艦隊',t:'c',cost:4,atk:5,hp:4,kw:['速攻','貫通'],evo:true,n:2},
+ {id:'bombard',nm:'砲撃母艦',f:'艦隊',t:'c',cost:4,atk:3,hp:4,kw:[],enter:{k:'dmgall',v:1},n:2},
+ {id:'carrier',nm:'空母',f:'艦隊',t:'c',cost:5,atk:2,hp:4,kw:[],enter:{k:'summon',id:'scout',v:2},n:2},
+ {id:'lineship',nm:'戦列艦',f:'艦隊',t:'c',cost:5,atk:5,hp:4,kw:[],W:true,n:2},
+ {id:'warfiend',nm:'戦鬼艦',f:'艦隊',t:'c',cost:5,atk:5,hp:5,kw:['速攻'],W:true,evo:true,n:1},
+ {id:'flag',nm:'旗艦',f:'艦隊',t:'c',cost:6,atk:6,hp:5,kw:['貫通'],W:true,n:2},
+ {id:'starbreaker',nm:'星砕き',f:'艦隊',t:'c',cost:6,atk:5,hp:5,kw:['貫通','速攻'],W:true,enter:{k:'dmgall',v:2},n:1,trump:true},
+ {id:'armada',nm:'無限艦隊',f:'艦隊',t:'c',cost:6,atk:4,hp:4,kw:[],W:true,enter:{k:'summon',id:'scout',v:3},aura:{f:'艦隊',atk:1},n:1,trump:true},
+ {id:'rally',nm:'総攻撃',f:'艦隊',t:'s',cost:2,tx:'このターン、味方の艦すべて攻撃+2',eff:{k:'rally',v:2},n:2},
+ {id:'haste',nm:'増速',f:'艦隊',t:'s',cost:1,tx:'味方の艦1体を今すぐ攻撃できるようにする',eff:{k:'ready',tgt:'ally'},n:2},
+ {id:'focus',nm:'集中砲火',f:'艦隊',t:'s',cost:3,tx:'敵の艦1体に5ダメージ',eff:{k:'dmg',v:5,tgt:'enemy'},n:2},
+ {id:'charge',nm:'突撃命令',f:'艦隊',t:'s',cost:3,tx:'味方の艦1体に速攻と貫通を与え、攻撃+2',eff:{k:'charge',tgt:'ally'},n:2},
+ {id:'barrage',nm:'一斉砲撃',f:'艦隊',t:'s',cost:4,tx:'敵の艦すべてに2ダメージ',eff:{k:'dmgall',v:2},n:2},
+ {id:'ambush',nm:'緊急出撃',f:'艦隊',t:'r',cost:2,tx:'罠：手札のコスト3以下の艦を1体無料で出す',tr:{k:'ambush'},n:2},
+ {id:'artillery',nm:'砲撃支援',f:'艦隊',t:'r',cost:2,tx:'罠：敵の艦すべてに1ダメージ',tr:{k:'dmgall',v:1},n:2},
+ {id:'intercept',nm:'迎撃隊',f:'艦隊',t:'r',cost:2,tx:'罠：攻撃してきた艦に3ダメージ',tr:{k:'dmgatk',v:3},n:2},
+ {id:'counterfire',nm:'反撃砲火',f:'艦隊',t:'r',cost:3,tx:'罠：攻撃してきた艦を破壊する',tr:{k:'destroyatk'},n:1},
+ // ── 機械：硬さと反撃。防衛線を守り、削られた分を補う ──
+ {id:'drone',nm:'修理ドローン',f:'機械',t:'c',cost:1,atk:1,hp:1,kw:['守護'],n:3},
+ {id:'bolt',nm:'ボルト',f:'機械',t:'c',cost:1,atk:1,hp:1,kw:['迎撃'],n:2},
+ {id:'battery',nm:'蓄電池',f:'機械',t:'c',cost:1,atk:1,hp:1,kw:[],enter:{k:'energy',v:1},n:2},
+ {id:'sweeper',nm:'掃海艇',f:'機械',t:'c',cost:2,atk:1,hp:2,kw:[],enter:{k:'sweep'},n:2},
+ {id:'turret',nm:'迎撃砲台',f:'機械',t:'c',cost:2,atk:1,hp:2,kw:['守護','迎撃'],n:2},
+ {id:'armor',nm:'装甲ロボ',f:'機械',t:'c',cost:2,atk:1,hp:4,kw:['守護'],n:2},
+ {id:'fixer',nm:'修理ロボ',f:'機械',t:'c',cost:2,atk:1,hp:3,kw:[],enter:{k:'heal',tgt:'ally'},n:2},
+ {id:'gearman',nm:'歯車兵',f:'機械',t:'c',cost:2,atk:1,hp:2,kw:['不死'],n:2},
+ {id:'mender',nm:'自己修復機',f:'機械',t:'c',cost:3,atk:2,hp:4,kw:['再生'],n:2},
+ {id:'miner',nm:'採掘機',f:'機械',t:'c',cost:3,atk:2,hp:5,kw:[],n:2},
+ {id:'emcannon',nm:'電磁砲台',f:'機械',t:'c',cost:3,atk:2,hp:2,kw:['迎撃'],enter:{k:'stun',tgt:'enemy'},n:2},
+ {id:'engineer',nm:'機械技師',f:'機械',t:'c',cost:3,atk:2,hp:3,kw:[],aura:{f:'機械',atk:1},n:2},
+ {id:'fort',nm:'要塞',f:'機械',t:'c',cost:4,atk:3,hp:5,kw:['守護'],n:2},
+ {id:'lancer',nm:'迎撃艦',f:'機械',t:'c',cost:4,atk:4,hp:3,kw:['迎撃'],n:2},
+ {id:'ironwall',nm:'鉄壁',f:'機械',t:'c',cost:4,atk:2,hp:6,kw:['守護'],n:2},
+ {id:'armfort',nm:'装甲要塞',f:'機械',t:'c',cost:4,atk:3,hp:6,kw:['守護','迎撃'],evo:true,n:2},
+ {id:'shieldgen',nm:'防壁発生機',f:'機械',t:'c',cost:4,atk:1,hp:4,kw:[],enter:{k:'addshield',v:1},n:2},
+ {id:'tank',nm:'重装甲艦',f:'機械',t:'c',cost:5,atk:5,hp:6,kw:['迎撃'],n:2},
+ {id:'mothership',nm:'採掘母船',f:'機械',t:'c',cost:5,atk:3,hp:5,kw:[],enter:{k:'addshield',v:1},n:2},
+ {id:'steamgolem',nm:'蒸気ゴーレム',f:'機械',t:'c',cost:5,atk:5,hp:5,kw:[],W:true,n:2},
+ {id:'machinegod',nm:'機械神',f:'機械',t:'c',cost:5,atk:5,hp:6,kw:['再生'],W:true,evo:true,n:1},
+ {id:'golem',nm:'巨大ゴーレム',f:'機械',t:'c',cost:6,atk:5,hp:8,kw:[],W:true,n:2},
+ {id:'satellite',nm:'要塞衛星',f:'機械',t:'c',cost:6,atk:2,hp:8,kw:['守護','迎撃','再生'],n:1,trump:true},
+ {id:'doomsday',nm:'決戦兵器',f:'機械',t:'c',cost:6,atk:4,hp:4,kw:['迎撃'],enter:{k:'dmgall',v:2},n:1,trump:true},
+ {id:'heal',nm:'修復',f:'機械',t:'s',cost:3,tx:'山札の上1枚を防衛線に加える',eff:{k:'addshield',v:1},n:2},
+ {id:'repair',nm:'整備',f:'機械',t:'s',cost:1,tx:'味方の艦1体の体力を全快し、守護を与える',eff:{k:'repair',tgt:'ally'},n:2},
+ {id:'emstorm',nm:'電磁嵐',f:'機械',t:'s',cost:3,tx:'敵の艦すべてを麻痺させる（次のターン攻撃できない）',eff:{k:'stunall'},n:2},
+ {id:'dismantle',nm:'解体',f:'機械',t:'s',cost:3,tx:'コスト3以下の敵の艦1体を破壊する',eff:{k:'destroy',tgt:'enemy',tf:{maxCost:3}},n:2},
+ {id:'net',nm:'迎撃網',f:'機械',t:'r',cost:2,tx:'罠：攻撃してきた艦に4ダメージ',tr:{k:'dmgatk',v:4},n:2},
+ {id:'emp',nm:'電磁パルス',f:'機械',t:'r',cost:2,tx:'罠：攻撃してきた艦は次のターン攻撃できない',tr:{k:'stun'},n:2},
+ {id:'reflect',nm:'反射装甲',f:'機械',t:'r',cost:3,tx:'罠：攻撃してきた艦にその攻撃力ぶんダメージ',tr:{k:'reflect'},n:2},
+ {id:'wall',nm:'障壁',f:'機械',t:'r',cost:2,tx:'罠：この攻撃を止め、山札の上1枚を防衛線に加える',tr:{k:'stopshield'},n:1},
+ {id:'fieldfix',nm:'緊急修理',f:'機械',t:'r',cost:1,tx:'罠：味方の艦すべての体力を全快する',tr:{k:'healall'},n:2},
+ // ── 星霊：手数と幻惑。引いて、消して、すり抜ける ──
+ {id:'dust',nm:'星屑',f:'星霊',t:'c',cost:1,atk:1,hp:1,kw:[],n:2},
+ {id:'glow',nm:'幽光',f:'星霊',t:'c',cost:1,atk:2,hp:1,kw:['潜伏'],n:2},
+ {id:'guidelight',nm:'導きの光',f:'星霊',t:'c',cost:1,atk:1,hp:1,kw:[],enter:{k:'draw',v:1},n:2},
+ {id:'haze',nm:'陽炎',f:'星霊',t:'c',cost:2,atk:3,hp:2,kw:['回避'],n:2},
+ {id:'meteor',nm:'流星',f:'星霊',t:'c',cost:2,atk:3,hp:2,kw:['速攻'],n:2},
+ {id:'echo',nm:'残響',f:'星霊',t:'c',cost:2,atk:1,hp:3,kw:[],die:{k:'buffrand',v:2},n:2},
+ {id:'phantom',nm:'幻影',f:'星霊',t:'c',cost:2,atk:3,hp:4,kw:[],n:2},
+ {id:'starchild',nm:'星の子',f:'星霊',t:'c',cost:2,atk:2,hp:2,kw:[],enter:{k:'draw',v:1},n:2},
+ {id:'seer',nm:'予言者',f:'星霊',t:'c',cost:3,atk:3,hp:3,kw:[],enter:{k:'draw',v:1},n:2},
+ {id:'stalker',nm:'星の影',f:'星霊',t:'c',cost:3,atk:5,hp:3,kw:['潜伏'],n:2},
+ {id:'wraith',nm:'星の亡霊',f:'星霊',t:'c',cost:3,atk:3,hp:2,kw:[],die:{k:'draw',v:1},n:2},
+ {id:'comettail',nm:'彗星の尾',f:'星霊',t:'c',cost:3,atk:4,hp:4,kw:['回避'],n:2},
+ {id:'starreader',nm:'星詠み',f:'星霊',t:'c',cost:3,atk:2,hp:3,kw:[],onatk:{k:'draw',v:1},n:2},
+ {id:'nebula',nm:'星雲',f:'星霊',t:'c',cost:4,atk:5,hp:3,kw:['貫通'],n:2},
+ {id:'mirage',nm:'蜃気楼',f:'星霊',t:'c',cost:4,atk:5,hp:4,kw:['潜伏'],n:2},
+ {id:'priestess',nm:'星の巫女',f:'星霊',t:'c',cost:4,atk:3,hp:3,kw:[],enter:{k:'buff',v:2,tgt:'ally'},n:2},
+ {id:'meteordragon',nm:'流星竜',f:'星霊',t:'c',cost:4,atk:6,hp:4,kw:['速攻','貫通'],evo:true,n:2},
+ {id:'sage',nm:'星の賢者',f:'星霊',t:'c',cost:4,atk:3,hp:4,kw:[],aura:{f:'星霊',atk:1},n:2},
+ {id:'nova',nm:'超新星',f:'星霊',t:'c',cost:5,atk:7,hp:5,kw:['貫通'],n:2},
+ {id:'whale',nm:'銀河鯨',f:'星霊',t:'c',cost:5,atk:6,hp:6,kw:[],W:true,enter:{k:'draw',v:1},n:2},
+ {id:'starqueen',nm:'星の女王',f:'星霊',t:'c',cost:5,atk:4,hp:6,kw:[],W:true,evo:true,enter:{k:'buffall',v:1},n:1},
+ {id:'darkstar',nm:'暗黒星',f:'星霊',t:'c',cost:6,atk:6,hp:5,kw:['潜伏','貫通'],W:true,n:1,trump:true},
+ {id:'worldtree',nm:'宇宙樹',f:'星霊',t:'c',cost:6,atk:4,hp:8,kw:[],aura:{f:'all',atk:1},enter:{k:'draw',v:2},n:1,trump:true},
+ {id:'buff',nm:'強化',f:'星霊',t:'s',cost:1,tx:'味方の艦1体に+2/+2',eff:{k:'buff',v:2,tgt:'ally'},n:2},
+ {id:'starfall',nm:'星降り',f:'星霊',t:'s',cost:2,tx:'2枚引く',eff:{k:'draw',v:2},n:2},
+ {id:'drain',nm:'吸収',f:'星霊',t:'s',cost:2,tx:'敵の艦1体に3ダメージ、1枚引く',eff:{k:'dmgdraw',v:3,tgt:'enemy'},n:2},
+ {id:'warp',nm:'転送',f:'星霊',t:'s',cost:3,tx:'敵の艦1体を手札に戻す',eff:{k:'bounce',tgt:'enemy'},n:2},
+ {id:'shower',nm:'流星群',f:'星霊',t:'s',cost:3,tx:'敵の艦すべてに2ダメージ、1枚引く',eff:{k:'showerdraw',v:2},n:2},
+ {id:'blessing',nm:'星の導き',f:'星霊',t:'s',cost:3,tx:'味方の艦すべてに+1/+1、1枚引く',eff:{k:'buffalldraw',v:1},n:2},
+ {id:'supernova',nm:'超新星爆発',f:'星霊',t:'s',cost:6,tx:'敵の艦をすべて破壊し、味方の艦すべてに3ダメージ',eff:{k:'supernova'},n:1,trump:true},
+ {id:'illusion',nm:'幻惑',f:'星霊',t:'r',cost:1,tx:'罠：この攻撃を止める',tr:{k:'stop'},n:2},
+ {id:'gravity',nm:'重力井戸',f:'星霊',t:'r',cost:2,tx:'罠：この攻撃を止め、攻撃してきた艦を相手の手札に戻す',tr:{k:'bounce'},n:2},
+ {id:'mirror',nm:'鏡像',f:'星霊',t:'r',cost:3,tx:'罠：攻撃してきた艦のコピーを自分の盤面に出す',tr:{k:'mirror'},n:2},
+ {id:'starblessing',nm:'星の加護',f:'星霊',t:'r',cost:2,tx:'罠：2枚引く',tr:{k:'draw',v:2},n:2},
+ // ── 深淵：手札破壊・蘇生・不死。相手の手を削り、死んでも戻る ──
+ {id:'imp',nm:'影の眷属',f:'深淵',t:'c',cost:1,atk:1,hp:1,kw:[],die:{k:'discard',v:1},n:2},
+ {id:'walker',nm:'亡者',f:'深淵',t:'c',cost:1,atk:1,hp:1,kw:['不死'],n:3},
+ {id:'tentacle',nm:'闇の触手',f:'深淵',t:'c',cost:2,atk:2,hp:2,kw:[],enter:{k:'discard',v:1},n:2},
+ {id:'ghoul',nm:'屍喰い',f:'深淵',t:'c',cost:2,atk:3,hp:2,kw:[],die:{k:'buffrand',v:1},n:2},
+ {id:'shade',nm:'影法師',f:'深淵',t:'c',cost:2,atk:2,hp:2,kw:[],onatk:{k:'discard',v:1},n:2},
+ {id:'specter',nm:'死霊',f:'深淵',t:'c',cost:3,atk:3,hp:3,kw:['不死'],n:2},
+ {id:'gravekeeper',nm:'墓守',f:'深淵',t:'c',cost:3,atk:2,hp:4,kw:[],enter:{k:'revive',v:2},n:2},
+ {id:'anglerfish',nm:'深海の怪魚',f:'深淵',t:'c',cost:3,atk:3,hp:2,kw:[],die:{k:'dmgrand',v:2},n:2},
+ {id:'plague',nm:'疫病使い',f:'深淵',t:'c',cost:3,atk:2,hp:3,kw:[],enter:{k:'dmgall',v:1},n:2},
+ {id:'thief',nm:'奪う影',f:'深淵',t:'c',cost:3,atk:3,hp:2,kw:[],enter:{k:'steal'},n:2},
+ {id:'priest',nm:'深淵の司祭',f:'深淵',t:'c',cost:4,atk:3,hp:4,kw:[],aura:{f:'深淵',atk:1},n:2},
+ {id:'reaper',nm:'死神',f:'深淵',t:'c',cost:4,atk:4,hp:3,kw:[],enter:{k:'destroy',tgt:'enemy',tf:{maxCost:3}},n:2},
+ {id:'vengeful',nm:'怨霊',f:'深淵',t:'c',cost:4,atk:3,hp:5,kw:[],die:{k:'summon',id:'walker',v:1},n:2},
+ {id:'abyssdragon',nm:'深淵竜',f:'深淵',t:'c',cost:4,atk:5,hp:5,kw:['不死'],evo:true,n:2},
+ {id:'corpsehill',nm:'屍の山',f:'深淵',t:'c',cost:4,atk:1,hp:5,kw:['守護','不死'],n:2},
+ {id:'blacksun',nm:'黒い太陽',f:'深淵',t:'c',cost:5,atk:5,hp:4,kw:[],enter:{k:'discard',v:2},n:2},
+ {id:'hadesking',nm:'冥府の王',f:'深淵',t:'c',cost:5,atk:4,hp:6,kw:[],W:true,enter:{k:'revive',v:3},n:2},
+ {id:'deathqueen',nm:'死の女王',f:'深淵',t:'c',cost:5,atk:5,hp:5,kw:[],W:true,evo:true,enter:{k:'dmgall',v:2},n:1},
+ {id:'endbeast',nm:'終末の獣',f:'深淵',t:'c',cost:6,atk:6,hp:6,kw:['不死'],W:true,n:2},
+ {id:'void',nm:'虚無',f:'深淵',t:'c',cost:6,atk:7,hp:7,kw:[],W:true,enter:{k:'discard',v:3},n:1,trump:true},
+ {id:'legion',nm:'死者の軍勢',f:'深淵',t:'c',cost:6,atk:3,hp:3,kw:[],enter:{k:'revive',v:3,times:2},aura:{f:'深淵',atk:1},n:1,trump:true},
+ {id:'curse',nm:'呪詛',f:'深淵',t:'s',cost:1,tx:'敵の艦1体に-2/-2',eff:{k:'weaken',v:2,tgt:'enemy'},n:2},
+ {id:'mindrot',nm:'手札破壊',f:'深淵',t:'s',cost:2,tx:'相手の手札をランダムに2枚捨てさせる',eff:{k:'discard',v:2},n:2},
+ {id:'raise',nm:'蘇生',f:'深淵',t:'s',cost:2,tx:'自分の墓地からコスト3以下の艦を1体戻す',eff:{k:'revive',v:3},n:2},
+ {id:'deathmark',nm:'死の宣告',f:'深淵',t:'s',cost:4,tx:'コスト4以下の敵の艦1体を破壊する',eff:{k:'destroy',tgt:'enemy',tf:{maxCost:4}},n:2},
+ {id:'sacrifice',nm:'生贄',f:'深淵',t:'s',cost:2,tx:'味方の艦1体を破壊し、3枚引く',eff:{k:'sacrifice',v:3,tgt:'ally'},n:2},
+ {id:'cataclysm',nm:'大災厄',f:'深淵',t:'s',cost:4,tx:'敵の艦すべてに3ダメージ。自分の防衛線を1枚失う',eff:{k:'cataclysm',v:3},n:1},
+ {id:'cursedwall',nm:'呪いの防壁',f:'深淵',t:'r',cost:2,tx:'罠：攻撃してきた艦に-2/-2',tr:{k:'weakenatk',v:2},n:2},
+ {id:'deadhand',nm:'死者の手',f:'深淵',t:'r',cost:2,tx:'罠：自分の墓地からコスト3以下の艦を1体戻す',tr:{k:'revive',v:3},n:2},
+ {id:'soulharvest',nm:'魂の回収',f:'深淵',t:'r',cost:3,tx:'罠：相手の手札をランダムに2枚捨てさせる',tr:{k:'discard',v:2},n:2},
+ // ── 共通 ──
+ {id:'lookout',nm:'見張り',f:'共通',t:'c',cost:1,atk:1,hp:1,kw:['守護'],n:2},
+ {id:'cargo',nm:'貨物船',f:'共通',t:'c',cost:2,atk:1,hp:2,kw:[],enter:{k:'draw',v:1},n:2},
+ {id:'merc',nm:'傭兵艦',f:'共通',t:'c',cost:3,atk:3,hp:3,kw:[],n:3},
+ {id:'bouncer',nm:'用心棒',f:'共通',t:'c',cost:4,atk:4,hp:4,kw:[],n:2},
+ {id:'trader',nm:'巨大商船',f:'共通',t:'c',cost:5,atk:3,hp:5,kw:[],enter:{k:'draw',v:2},n:2},
+ {id:'shot',nm:'光線射撃',f:'共通',t:'s',cost:2,tx:'敵の艦1体に3ダメージ',eff:{k:'dmg',v:3,tgt:'enemy'},n:3},
+ {id:'supply',nm:'補給',f:'共通',t:'s',cost:1,tx:'2枚引く',eff:{k:'draw',v:2},n:2},
+ {id:'truce',nm:'停戦',f:'共通',t:'s',cost:2,tx:'敵の艦1体を麻痺させる（次のターン攻撃できない）',eff:{k:'stun',tgt:'enemy'},n:2},
+ {id:'timewarp',nm:'時の裂け目',f:'共通',t:'s',cost:5,tx:'味方の艦すべてが今すぐ攻撃できるようになり、1枚引く',eff:{k:'timewarp'},n:1,trump:true},
+ {id:'mine',nm:'機雷',f:'共通',t:'r',cost:1,tx:'罠：攻撃してきた艦に2ダメージ',tr:{k:'dmgatk',v:2},n:3},
+ {id:'smoke',nm:'煙幕',f:'共通',t:'r',cost:2,tx:'罠：この攻撃を止める',tr:{k:'stop'},n:2},
+ // ══ 第2弾：毒・覚醒・超大型 ══
+ // 艦隊
+ {id:'firearrow',nm:'火矢艇',f:'艦隊',t:'c',cost:1,atk:1,hp:1,kw:['速攻','毒'],n:2,set:2},
+ {id:'twinfighter',nm:'双発戦闘機',f:'艦隊',t:'c',cost:2,atk:2,hp:1,kw:['連撃'],n:2,set:2},
+ {id:'incendiary',nm:'焼夷艦',f:'艦隊',t:'c',cost:3,atk:3,hp:3,kw:[],die:{k:'dmgall',v:1},n:2,set:2},
+ {id:'awakenship',nm:'覚醒艦',f:'艦隊',t:'c',cost:3,atk:2,hp:3,kw:['覚醒'],n:2,set:2},
+ {id:'bigcannon',nm:'巨砲艦',f:'艦隊',t:'c',cost:5,atk:4,hp:5,kw:[],onatk:{k:'dmgrand',v:3},n:2,set:2},
+ {id:'annihilator',nm:'殲滅艦',f:'艦隊',t:'c',cost:7,atk:7,hp:7,kw:['貫通'],W:true,enter:{k:'dmgall',v:3},n:2,set:2},
+ {id:'systemcannon',nm:'星系殲滅砲',f:'艦隊',t:'s',cost:8,tx:'敵の艦をすべて破壊し、相手の防衛線を2枚焼却する（手札に入らない）',eff:{k:'annihilate',v:2},n:1,trump:true,set:2},
+ {id:'firebomb',nm:'焼夷弾',f:'艦隊',t:'s',cost:3,tx:'敵の艦すべてに1ダメージと毒',eff:{k:'poisonall',v:1},n:2,set:2},
+ {id:'burningline',nm:'燃える防衛線',f:'艦隊',t:'r',cost:2,tx:'罠：攻撃してきた艦に2ダメージと毒',tr:{k:'poisonatk',v:2},n:2,set:2},
+ // 機械
+ {id:'repairbee',nm:'修理蜂',f:'機械',t:'c',cost:1,atk:1,hp:2,kw:['覚醒'],n:2,set:2},
+ {id:'core',nm:'蓄電コア',f:'機械',t:'c',cost:2,atk:1,hp:2,kw:[],enter:{k:'energy',v:1},n:2,set:2},
+ {id:'heavyengine',nm:'重機関',f:'機械',t:'c',cost:4,atk:3,hp:5,kw:['迎撃','覚醒'],n:2,set:2},
+ {id:'fortcannon',nm:'要塞砲',f:'機械',t:'c',cost:5,atk:2,hp:6,kw:['守護','迎撃'],n:2,set:2},
+ {id:'steeltitan',nm:'鋼の巨神',f:'機械',t:'c',cost:6,atk:7,hp:8,kw:['迎撃'],W:true,evo:true,n:1,set:2},
+ {id:'planetfort',nm:'惑星要塞',f:'機械',t:'c',cost:7,atk:5,hp:9,kw:['守護'],W:true,enter:{k:'addshield',v:1},n:2,set:2},
+ {id:'chronofort',nm:'時空要塞',f:'機械',t:'c',cost:8,atk:6,hp:10,kw:['守護','迎撃','再生'],W:true,enter:{k:'addshield',v:1},n:1,trump:true,set:2},
+ {id:'fullrepair',nm:'完全修復',f:'機械',t:'s',cost:2,tx:'味方の艦すべての体力を全快する',eff:{k:'healall'},n:2,set:2},
+ {id:'emprison',nm:'電磁牢',f:'機械',t:'r',cost:3,tx:'罠：攻撃してきた艦と、他の敵の艦1体（ランダム）を麻痺させる',tr:{k:'stun2'},n:2,set:2},
+ // 星霊
+ {id:'mistsprite',nm:'毒霧の精',f:'星霊',t:'c',cost:2,atk:2,hp:3,kw:['毒'],n:2,set:2},
+ {id:'startower',nm:'星読みの塔',f:'星霊',t:'c',cost:3,atk:3,hp:4,kw:['覚醒'],n:2,set:2},
+ {id:'illusionist',nm:'幻惑師',f:'星霊',t:'c',cost:4,atk:3,hp:4,kw:[],enter:{k:'bounce',tgt:'enemy'},n:2,set:2},
+ {id:'serpentnebula',nm:'大蛇星雲',f:'星霊',t:'c',cost:6,atk:6,hp:6,kw:['潜伏'],W:true,n:2,set:2},
+ {id:'staremperor',nm:'星の帝王',f:'星霊',t:'c',cost:6,atk:7,hp:7,kw:['潜伏'],W:true,evo:true,enter:{k:'draw',v:2},n:1,set:2},
+ {id:'meteorrain',nm:'流星雨',f:'星霊',t:'s',cost:4,tx:'敵の艦すべてに2ダメージ、2枚引く',eff:{k:'showerdraw2',v:2},n:2,set:2},
+ {id:'rebirth',nm:'星の再誕',f:'星霊',t:'s',cost:5,tx:'味方の艦すべてに+2/+2と全快',eff:{k:'rebirth',v:2},n:2,set:2},
+ {id:'creation',nm:'星の創造',f:'星霊',t:'s',cost:8,tx:'5枚引き、味方の艦すべてに+2/+2と速攻を与える',eff:{k:'creation'},n:1,trump:true,set:2},
+ {id:'starstorm',nm:'星の嵐',f:'星霊',t:'r',cost:3,tx:'罠：敵の艦すべてに2ダメージ',tr:{k:'dmgall',v:2},n:1,set:2},
+ // 深淵
+ {id:'plaguerat',nm:'疫病鼠',f:'深淵',t:'c',cost:1,atk:1,hp:1,kw:['毒'],n:2,set:2},
+ {id:'hexer',nm:'呪術師',f:'深淵',t:'c',cost:3,atk:2,hp:3,kw:[],enter:{k:'poison',tgt:'enemy'},n:2,set:2},
+ {id:'deathdealer',nm:'死の商人',f:'深淵',t:'c',cost:4,atk:3,hp:3,kw:[],enter:{k:'discarddraw',v:1},n:2,set:2},
+ {id:'corpsedragon',nm:'屍竜',f:'深淵',t:'c',cost:6,atk:6,hp:6,kw:['不死','覚醒'],W:true,n:2,set:2},
+ {id:'deathemperor',nm:'死の皇帝',f:'深淵',t:'c',cost:6,atk:6,hp:8,kw:['不死'],W:true,evo:true,enter:{k:'discard',v:2},n:1,set:2},
+ {id:'hadesgate',nm:'冥界の門',f:'深淵',t:'c',cost:8,atk:6,hp:6,kw:[],W:true,enter:{k:'revive',v:6,times:4},n:1,trump:true,set:2},
+ {id:'pestilence',nm:'疫病',f:'深淵',t:'s',cost:3,tx:'敵の艦すべてに毒',eff:{k:'poisonall',v:0},n:2,set:2},
+ {id:'collapse',nm:'銀河崩壊',f:'深淵',t:'s',cost:8,tx:'すべての艦を破壊し、双方の防衛線を1枚ずつ焼却する',eff:{k:'collapse'},n:1,trump:true,set:2},
+ {id:'cursemist',nm:'呪いの霧',f:'深淵',t:'r',cost:2,tx:'罠：攻撃してきた艦に毒と麻痺',tr:{k:'poisonstun'},n:2,set:2},
+ // 共通
+ {id:'merccaptain',nm:'傭兵隊長',f:'共通',t:'c',cost:4,atk:4,hp:4,kw:['覚醒'],n:2,set:2},
+ {id:'rush',nm:'突貫工事',f:'共通',t:'s',cost:1,tx:'このターン、エネルギー+2',eff:{k:'energy',v:2},n:2,set:2},
+ {id:'finalbattle',nm:'決戦',f:'共通',t:'s',cost:7,tx:'味方の艦すべてに+3/+3と速攻',eff:{k:'finalbattle',v:3},n:1,trump:true,set:2},
+ {id:'minefield',nm:'機雷原',f:'共通',t:'r',cost:3,tx:'罠：敵の艦すべてに1ダメージ、攻撃してきた艦にさらに2',tr:{k:'minefield',v:1},n:2,set:2},
+];
+const BOARD_MAX=4,ENERGY_MAX=8,ENERGY_CARRY=3,HAND_MAX=8,DRAFT_ROUNDS=6,SHIELDS=5,DECK_SIZE=30,PICK_SIZE=24,PACK_TAKE=4;
+let ACTIVE_SETS=[1,2];
+const cardSet=c=>c.set||1;
+const activeCards=()=>CARDS.filter(c=>ACTIVE_SETS.includes(cardSet(c)));
+const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let uid=0;
+const mk=id=>{const c=byId[id];return {...c,kw:[...(c.kw||[])],u:uid++,hp:c.hp,maxhp:c.hp,ready:false,buffA:0,tempA:0,dodged:false,attacks:0,stunned:false,undyingUsed:false,poison:false,stealth:!!(c.kw||[]).includes('潜伏')}};
+const has=(c,k)=>c.kw.includes(k);
+const TXT={dmg:e=>`敵の艦1体に${e.v}ダメージ`,dmgrand:e=>`敵の艦1体（ランダム）に${e.v}ダメージ`,dmgall:e=>`敵の艦すべてに${e.v}ダメージ`,draw:e=>`${e.v}枚引く`,allatk:e=>`味方の艦すべて攻撃+${e.v}`,sweep:()=>'相手の防衛線の上1枚をめくる（罠なら破壊、他は相手の手札へ）',buffrand:e=>`味方の艦1体（ランダム）に+${e.v}/+${e.v}`,buff:e=>`味方の艦1体に+${e.v}/+${e.v}`,buffall:e=>`味方の艦すべてに+${e.v}/+${e.v}`,summon:e=>`${byId[e.id].nm}を${e.v}体出す`,heal:()=>'味方の艦1体を全快',stun:()=>'敵の艦1体を麻痺',addshield:e=>`山札の上${e.v}枚を防衛線に加える`,energy:e=>`エネルギー+${e.v}`,discard:e=>`相手の手札を${e.v}枚捨てさせる`,steal:()=>'相手の手札を1枚奪う',revive:e=>`墓地からコスト${e.v}以下の艦を${e.times||1}体戻す`,destroy:e=>`コスト${e.tf.maxCost}以下の敵の艦1体を破壊`,poison:()=>'敵の艦1体に毒',discarddraw:e=>`相手の手札を${e.v}枚捨てさせ、${e.v}枚引く`,bounce:()=>'敵の艦1体を手札に戻す'};
+function cardText(c){
+  if(c.t!=='c')return c.tx;
+  const parts=[...(c.kw||[])];if(c.W)parts.push('W');
+  if(c.evo)parts.push('進化');
+  if(c.aura)parts.push(`${c.aura.f==='all'?'味方':c.aura.f}の艦は攻撃+${c.aura.atk}`);
+  if(c.enter)parts.push('登場時：'+TXT[c.enter.k](c.enter));
+  if(c.onatk)parts.push('攻撃時：'+TXT[c.onatk.k](c.onatk));
+  if(c.die)parts.push('撃沈時：'+TXT[c.die.k](c.die));
+  return parts.join('／');
+}
+// ── ドラフト／構築AI ──
+const cardValue=c=>{
+  let v;
+  if(c.t==='c'){v=(c.atk+c.hp)-c.cost*1.6+c.kw.length*0.6+(c.W?0.8:0)+(c.aura?1:0)+(c.onatk?0.8:0);if(c.enter)v+=1;if(c.die)v+=.8;if(c.kw.includes('守護'))v-=.3;if(c.evo)v-=.4}
+  else if(c.t==='r')v=1.9;
+  else v=1.4+c.cost*0.25;
+  if(c.trump)v+=1.5;return v;
+};
+const draftValue=(c,deck)=>{const same=deck.filter(d=>byId[d].f===c.f).length;return cardValue(c)+(c.f!=='共通'?same*0.35:0)+Math.random()*0.8};
+const cpuDraft=(packIds,deckIds,take=PACK_TAKE)=>packIds.map(id=>({id,s:draftValue(byId[id],deckIds)})).sort((a,b)=>b.s-a.s).slice(0,take).map(c=>c.id);
+// 防衛線の選択：罠を優先、残りは価値の低いカード（切り札は入れない）
+function cpuShields(deckIds){
+  const scored=deckIds.map((id,i)=>{const c=byId[id];const s=c.t==='r'?10+c.cost:-(cardValue(c)+(c.trump?10:0));return {i,s}}).sort((a,b)=>b.s-a.s);
+  return scored.slice(0,SHIELDS).map(x=>x.i);
+}
+function dealPacks(pool){pool=shuffle([...pool]);const p=[[],[]];for(let i=0;i<DRAFT_ROUNDS;i++){p[0].push(pool.splice(0,6));p[1].push(pool.splice(0,6))}return p}
+const fullPool=()=>{const pool=[];activeCards().forEach(c=>{for(let i=0;i<c.n;i++)pool.push(c.id)});return pool};
+// カードの経験的な強さ：ランダムデッキ同士の自己対戦1800試合での「入っていたときの勝率-0.5」。AI対戦画面の集計で更新できる
+const CARD_STRENGTH={"patrol": 0.047, "scout": 0.05, "kamikaze": 0.027, "courier": -0.008, "escort": 0.007, "raider": -0.029, "gunship": -0.038, "ember": -0.014, "sweepboat": 0.027, "gunboat": -0.004, "banner": -0.019, "assault": -0.015, "breaker": -0.018, "drill": -0.038, "flak": -0.023, "twin": -0.037, "cruiser": -0.058, "gale": -0.021, "crimson": -0.042, "bombard": -0.022, "carrier": 0.011, "lineship": -0.042, "warfiend": 0.023, "flag": -0.063, "starbreaker": -0.004, "armada": -0.02, "rally": -0.021, "haste": -0.014, "focus": -0.004, "charge": -0.005, "barrage": -0.03, "ambush": 0.043, "artillery": 0.055, "intercept": 0.083, "counterfire": 0.003, "drone": 0.035, "bolt": 0.028, "battery": 0.02, "sweeper": 0.075, "turret": 0.008, "armor": 0.041, "fixer": 0.025, "gearman": 0.018, "mender": 0.004, "miner": 0.041, "emcannon": 0.053, "engineer": -0.033, "fort": 0.073, "lancer": -0.006, "ironwall": 0.042, "armfort": -0.02, "shieldgen": 0.002, "tank": 0.014, "mothership": 0.018, "steamgolem": -0.002, "machinegod": -0.039, "golem": -0.004, "satellite": 0.045, "doomsday": 0.022, "heal": -0.063, "repair": 0.011, "emstorm": 0.032, "dismantle": -0.027, "net": 0.031, "emp": 0.021, "reflect": 0.062, "wall": 0.079, "fieldfix": -0.085, "dust": -0.029, "glow": 0.002, "guidelight": -0.029, "haze": -0.054, "meteor": 0.031, "echo": -0.011, "phantom": -0.018, "starchild": -0.009, "seer": -0.044, "stalker": -0.014, "wraith": -0.002, "comettail": -0.042, "starreader": -0.002, "nebula": 0.017, "mirage": -0.075, "priestess": -0.004, "meteordragon": -0.014, "sage": -0.095, "nova": -0.016, "whale": -0.019, "starqueen": 0.073, "darkstar": -0.066, "worldtree": -0.05, "buff": 0.016, "starfall": -0.06, "drain": -0.017, "warp": 0.007, "shower": 0.042, "blessing": -0.031, "supernova": -0.003, "illusion": -0.035, "gravity": 0.071, "mirror": 0.106, "starblessing": -0.018, "imp": 0.02, "walker": 0.064, "tentacle": 0.052, "ghoul": -0.022, "shade": 0.014, "specter": 0.011, "gravekeeper": -0.018, "anglerfish": -0.012, "plague": 0.026, "thief": -0.025, "priest": -0.066, "reaper": 0.051, "vengeful": -0.014, "abyssdragon": -0.012, "corpsehill": 0, "blacksun": -0.022, "hadesking": 0.041, "deathqueen": 0.011, "endbeast": -0.017, "void": 0.048, "legion": -0.027, "curse": 0.069, "mindrot": -0.047, "raise": -0.035, "deathmark": -0.026, "sacrifice": -0.065, "cataclysm": 0.036, "cursedwall": 0, "deadhand": 0.008, "soulharvest": 0.015, "lookout": -0.041, "cargo": -0.034, "merc": -0.013, "bouncer": 0.011, "trader": -0.07, "shot": -0.026, "supply": -0.009, "truce": -0.004, "timewarp": 0.003, "mine": 0.003, "smoke": -0.062, "firearrow": 0.025, "twinfighter": -0.063, "incendiary": -0.011, "awakenship": -0.022, "bigcannon": -0.017, "annihilator": 0.081, "systemcannon": -0.028, "firebomb": -0.011, "burningline": 0.046, "repairbee": -0.045, "core": 0.023, "heavyengine": -0.012, "fortcannon": 0.009, "steeltitan": -0.025, "planetfort": 0.044, "chronofort": 0.064, "fullrepair": 0.006, "emprison": 0.046, "mistsprite": 0.028, "startower": -0.002, "illusionist": 0.067, "serpentnebula": -0.015, "staremperor": -0.014, "meteorrain": -0.012, "rebirth": -0.071, "creation": -0.05, "starstorm": 0.143, "plaguerat": -0.003, "hexer": 0.02, "deathdealer": -0.047, "corpsedragon": -0.03, "deathemperor": 0.01, "hadesgate": -0.062, "pestilence": 0.007, "collapse": -0.106, "cursemist": 0.053, "merccaptain": -0.034, "rush": -0.018, "finalbattle": -0.05, "minefield": 0.12};
+// デッキ構成を考慮したカードの価値：艦を18〜20枚、呪文≤6、罠≤4、コスト5以上≤6 に寄せる
+function deckScore(c,deck,main,sub){
+  const cnt=t=>deck.filter(id=>byId[id].t===t).length;
+  let v=cardValue(c)*0.3+(CARD_STRENGTH[c.id]||0)*40;
+  if(c.t==='c'){v+=1.2;if(cnt('c')<18)v+=1.5;const big=deck.filter(id=>byId[id].t==='c'&&byId[id].cost>=5).length;if(c.cost>=5&&big>=6)v-=2;if(c.cost<=2&&deck.filter(id=>byId[id].cost<=2).length<8)v+=0.6;if(c.evo&&deck.filter(id=>byId[id].f===c.f&&byId[id].t==='c'&&!byId[id].evo).length<6)v-=2}
+  else if(c.t==='s'){v-=c.cost*0.25;if(cnt('s')>=6)v-=2.5}
+  else{if(cnt('r')>=4)v-=2.5}
+  if(main)v+=c.f===main?1.2:c.f===sub?0.4:c.f==='共通'?0.2:-1;
+  return v;
+}
+// 構築デッキ（30枚）をCPUが自動で組む：主勢力＋副勢力＋共通
+function cpuBuildDeck(main,sub,noise=1.2){
+  main=main||FACTIONS[Math.random()*FACTIONS.length|0];
+  sub=sub||shuffle(FACTIONS.filter(f=>f!==main))[0];
+  const deck=[];
+  while(deck.length<DECK_SIZE){
+    const counts={};deck.forEach(id=>counts[id]=(counts[id]||0)+1);
+    const mainN=deck.filter(id=>byId[id].f===main).length;const cands=activeCards().filter(c=>(counts[c.id]||0)<c.n&&(c.f===main||(mainN>=18&&(c.f===sub||c.f==='共通')))).map(c=>({id:c.id,s:deckScore(c,deck,main,sub)+Math.random()*noise})).sort((a,b)=>b.s-a.s);
+    deck.push(cands[0].id);
+  }
+  return deck;
+}
+// デッキからのピック：random=18枚ランダム / pack=5枚×6パックから3枚ずつ（CPU用）
+const randomPick=deck=>shuffle([...deck]).slice(0,PICK_SIZE);
+function deckPacks(deck){const d=shuffle([...deck]);const packs=[];for(let i=0;i<DRAFT_ROUNDS;i++)packs.push(d.splice(0,5));return packs}
+
+// 候補手を文章にする（診断パネル用）
+function describeActs(E,acts){
+  const me=E.cur,op=E.other(me);const find=(arr,u)=>arr.find(x=>x.u===u);
+  if(!acts.length)return '何もしない';
+  return acts.map(a=>{const c=find(me.hand,a.u)||find(me.board,a.u);const t=a.tu!=null?(find(op.board,a.tu)||find(me.board,a.tu)):null;const cn=c?c.nm:'?';
+    return a.k==='burn'?`燃:${cn}`:a.k==='play'?`出:${cn}${t?'→'+t.nm:''}`:`攻:${cn}→${t?t.nm:'本体'}`}).join('、');
+}
+// 評価関数の重み（自己対戦で調整した値）
+const EVAL_W={carry:0.5,shield:8,lethal:12,lethalPer:4,dead:14,deadPer:6,board:1.2,guard:2.25,hand:1.6,energy:0.4,broken:2.2,stun:1.2,grave:0.27,atkNext:0.3,deck:0.45,shieldLow:3};
+// AIレベルごとの探索設定
+const LEVELS={1:{greedy:true,noise:1.5},2:{depth:4,playCap:80,keep:12,attackCap:40,reply:0,samples:0},3:{depth:6,playCap:300,keep:30,attackCap:100,rollouts:0,rolloutN:3,rolloutTurns:3,reply:10,samples:8,replyW:0.6,replySearch:null}};
+// ===== バトルタワー用 =====
+const randomDeck=()=>shuffle(fullPool()).slice(0,DECK_SIZE);
+// 前の階の相手デッキを土台に、弱いカードを5枚入れ替えて洗練させる。階が上がるほど迷いが減る
+function cpuTowerDeck(prev,floor){
+  if(!prev)return randomDeck();
+  const deck=[...prev];const noise=Math.max(0.5,3-floor*0.3);
+  const fac=FACTIONS.map(f=>[f,deck.filter(id=>byId[id].f===f).length]).sort((a,b)=>b[1]-a[1]);
+  const main=fac[0][0],sub=fac[1][0];
+  const swaps=Math.min(4,1+Math.floor(floor/2));
+  for(let k=0;k<swaps;k++){
+    const worst=deck.map((id,i)=>({i,s:deckScore(byId[id],deck.filter((_,j)=>j!==i),main,sub)+Math.random()*noise})).sort((a,b)=>a.s-b.s)[0];
+    const rest=deck.filter((_,j)=>j!==worst.i);const counts={};rest.forEach(id=>counts[id]=(counts[id]||0)+1);
+    const cands=activeCards().filter(c=>(counts[c.id]||0)<c.n).map(c=>({id:c.id,s:deckScore(c,rest,main,sub)+Math.random()*noise})).sort((a,b)=>b.s-a.s);
+    if(cands.length&&cands[0].s>worst.s)deck[worst.i]=cands[0].id;
+  }
+  return deck;
+}
+// 強さ表の再計測：ランダムデッキ同士（中級）を n 試合。結果を CARD_STRENGTH に上書きして返す
+async function measureStrength(n=1500,progress=()=>{},levels=[2,2]){
+  const st={};activeCards().forEach(c=>st[c.id]={in:0,win:0});
+  for(let i=0;i<n;i++){const A=randomPick(randomDeck()),B=randomPick(randomDeck());
+    const E=makeEngine({decks:[A,B],shieldIdx:[cpuShields(A),cpuShields(B)],levels,firstIdx:i%2});let s=0;
+    while(!E.over&&s++<200){E.beginTurn(E.cur);if(E.over)break;await E.cpuTurn();if(!E.endTurn())break}
+    const w=E.result?E.result.winner:null;[A,B].forEach((d,k)=>new Set(d).forEach(id=>{st[id].in++;if(w===k)st[id].win++}));
+    if(i%20===0){progress(i);await new Promise(r=>setTimeout(r,0))}}
+  const out={};activeCards().forEach(c=>{const r=st[c.id];out[c.id]=+(r.in?(r.win/r.in-0.5):0).toFixed(3)});
+  Object.assign(CARD_STRENGTH,out);return out;
+}
+const towerLevel=floor=>floor<=2?1:floor<=5?2:floor<=9?3:4;
+// ===== 対戦エンジン =====
+// decks: [ids,ids]（24枚） / shieldIdx: [[5 indices],[...]] / levels: 各側のAIレベル(1=初級 2=中級 3=上級)
+function makeEngine(opts){
+  const {names=['A','B'],humans=[false,false],limit=12,log=()=>{},onRender=()=>{},wait=async()=>{},levels=[2,2]}=opts;
+  const E={};
+  let S;
+  if(opts.state){S=opts.state.S;E.cur=S[opts.state.cur];E.over=opts.state.over;E.result=opts.state.result}
+  else{
+    const side=(name,ids,sIdx,human)=>{const sh=ids.filter((_,i)=>sIdx.includes(i)).map(mk),dk=ids.filter((_,i)=>!sIdx.includes(i)).map(mk);
+      return {name,shields:shuffle(sh),deck:shuffle(dk),hand:[],board:[],grave:[],energy:0,turns:0,human,burned:false,dead:false,broken:0}};
+    S=[side(names[0],opts.decks[0],opts.shieldIdx[0],humans[0]),side(names[1],opts.decks[1],opts.shieldIdx[1],humans[1])];
+    E.cur=S[opts.firstIdx||0];E.over=false;E.result=null;
+  }
+  E.S=S;
+  const other=E.other=s=>s===S[0]?S[1]:S[0];
+  const idx=s=>S.indexOf(s);
+  const draw=(s,n=1)=>{for(let i=0;i<n;i++)if(s.deck.length&&s.hand.length<HAND_MAX)s.hand.push(s.deck.pop())};
+  const synergy=(s,f)=>s.board.filter(c=>c.f===f).length>=2;
+  const atkOf=E.atkOf=(s,c)=>Math.max(0,c.atk+c.buffA+c.tempA+(c.f==='艦隊'&&synergy(s,'艦隊')?1:0)+s.board.reduce((a,o)=>a+(o!==c&&o.aura&&(o.aura.f==='all'||o.aura.f===c.f)?o.aura.atk:0),0));
+  // 攻撃力の内訳（ログ用）
+  const atkBreak=(s,c)=>{const parts=[`${c.atk}`];if(c.buffA)parts.push(`${c.buffA>0?'+':''}${c.buffA}強化`);if(c.tempA)parts.push(`+${c.tempA}一時`);if(c.f==='艦隊'&&synergy(s,'艦隊'))parts.push('+1艦隊');
+    const au=s.board.reduce((a,o)=>a+(o!==c&&o.aura&&(o.aura.f==='all'||o.aura.f===c.f)?o.aura.atk:0),0);if(au)parts.push(`+${au}オーラ`);return parts.length>1?`${atkOf(s,c)}(${parts.join('')})`:`${atkOf(s,c)}`};
+  const costOf=E.costOf=(s,c)=>Math.max(0,c.cost-((c.t==='s'||c.t==='r')&&synergy(s,'星霊')?1:0));
+  const hasGuard=E.hasGuard=s=>s.board.some(c=>has(c,'守護')&&!c.stealth);
+  const targetable=E.targetable=(s,c)=>!c.stealth&&(!hasGuard(s)||has(c,'守護'));
+  const addShield=(s,n)=>{for(let i=0;i<n;i++)if(s.deck.length){s.shields.push(s.deck.pop());log(`${s.name}の防衛線が1枚増えた`)}};
+  const discard=(s,n)=>{for(let i=0;i<n&&s.hand.length;i++){const c=s.hand.splice(Math.random()*s.hand.length|0,1)[0];s.grave.push(c.id);log(`${s.name}の手札から${c.nm}が捨てられた`)}};
+  if(!opts.state){for(let i=0;i<4;i++){draw(S[0]);draw(S[1])}const second=other(E.cur);draw(second);second.bonus=1;log(`先手：${E.cur.name}（1ターン目はドローなし）／後手：${second.name}（初手5枚、1〜2ターン目⚡+1）`,true)}
+  E.beginTurn=s=>{
+    const carry=Math.min(ENERGY_CARRY,s.energy||0);s.turns++;s.energy=Math.min(ENERGY_MAX,s.turns+(s.bonus&&s.turns<=2?1:0))+carry;if(carry)log(`　持ち越し⚡+${carry}`);s.burned=false;if(!(s.turns===1&&!s.bonus))draw(s);
+    s.board.forEach(c=>{c.attacks=0;if(c.stunned){c.ready=false;c.stunned=false;log(`${c.nm}は麻痺して動けない`)}else c.ready=true;
+      if(has(c,'再生')&&c.hp<c.maxhp){c.hp=c.maxhp;log(`${c.nm}が再生した`)}
+      if(has(c,'覚醒')){c.buffA++;c.hp++;c.maxhp++;log(`覚醒：${c.nm}が+1/+1`)}
+      if(c.poison){const b=c.hp;c.hp-=1;log(`　毒：${c.nm} 体力${b}→${c.hp}`)}});
+    cleanup();
+    log(`── ${s.name}の第${s.turns}ターン ──`);
+  };
+  E.burn=(s,c)=>{if(E.over||s!==E.cur||s.burned||!c||!s.hand.includes(c))return false;s.hand.splice(s.hand.indexOf(c),1);s.grave.push(c.id);s.energy++;s.burned=true;log(`${s.name}が${c.nm}を燃やした（⚡+1）`);return true};
+  const reduce=(t,s,amt)=>t.f==='機械'&&has(t,'守護')&&synergy(s,'機械')&&amt>1?amt-1:amt;
+  const hit=(t,s,amt,why)=>{const r=reduce(t,s,amt);const b=t.hp;t.hp-=r;log(`　${why||'ダメージ'}：${t.nm} 体力${b}→${t.hp}${r!==amt?`（機械ボーナスで${amt}→${r}）`:''}`)};
+  const summon=(s,id,n)=>{for(let i=0;i<n&&s.board.length<BOARD_MAX;i++)s.board.push(mk(id));log(`${byId[id].nm}が出撃`)};
+  const revive=(s,maxCost,times=1)=>{for(let i=0;i<times;i++){if(s.board.length>=BOARD_MAX)return;const cands=s.grave.map((id,j)=>({id,j,c:byId[id]})).filter(x=>x.c.t==='c'&&x.c.cost<=maxCost&&!x.c.evo).sort((a,b)=>cardValue(b.c)-cardValue(a.c));
+    if(!cands.length)return;s.grave.splice(cands[0].j,1);s.board.push(mk(cands[0].id));log(`${byId[cands[0].id].nm}が墓地から戻った`)}};
+  function cleanup(){
+    let again=false;
+    S.forEach(s=>{const dead=[];s.board=s.board.filter(c=>{if(c.hp>0)return true;if(has(c,'不死')&&!c.undyingUsed){c.undyingUsed=true;c.hp=1;log(`不死：${c.nm}は倒れない`);return true}dead.push(c);return false});
+      dead.forEach(c=>{log(`${c.nm}（${s.name}）が撃沈`);s.grave.push(c.id);if(c.die){doEffect(s,c.die,null,c);again=true}
+        if(synergy(s,'深淵')&&s.deck.length){draw(s,1);log(`　深淵ボーナス：${s.name}が1枚引いた`)}})});
+    if(again||S.some(s=>s.board.some(c=>c.hp<=0)))cleanup();
+  }
+  // ===== 効果の実行（登場時／撃沈時／攻撃時／呪文で共通） =====
+  function doEffect(s,e,target,src){
+    const op=other(s);const rnd=arr=>arr.length?arr[Math.random()*arr.length|0]:null;
+    switch(e.k){
+      case 'dmg':if(target)hit(target,op,e.v,'効果ダメージ');break;
+      case 'dmgrand':{const t=rnd(op.board);if(t)hit(t,op,e.v,'効果ダメージ');break}
+      case 'dmgall':op.board.forEach(t=>hit(t,op,e.v,'全体ダメージ'));break;
+      case 'dmgdraw':if(target)hit(target,op,e.v,'効果ダメージ');draw(s,1);break;
+      case 'showerdraw':op.board.forEach(t=>hit(t,op,e.v,'全体ダメージ'));draw(s,1);break;
+      case 'draw':draw(s,e.v);break;
+      case 'allatk':s.board.forEach(t=>{if(t!==src)t.buffA+=e.v});break;
+      case 'buff':if(target){target.buffA+=e.v;target.hp+=e.v;target.maxhp+=e.v}break;
+      case 'buffrand':{const t=rnd(s.board);if(t){t.buffA+=e.v;t.hp+=e.v;t.maxhp+=e.v}break}
+      case 'buffall':s.board.forEach(t=>{if(t!==src){t.buffA+=e.v;t.hp+=e.v;t.maxhp+=e.v}});break;
+      case 'buffalldraw':s.board.forEach(t=>{t.buffA+=e.v;t.hp+=e.v;t.maxhp+=e.v});draw(s,1);break;
+      case 'summon':summon(s,e.id,e.v);break;
+      case 'heal':if(target)target.hp=target.maxhp;break;
+      case 'repair':if(target){target.hp=target.maxhp;if(!has(target,'守護'))target.kw.push('守護')}break;
+      case 'stun':if(target){target.stunned=true;target.ready=false}break;
+      case 'stunall':op.board.forEach(t=>{t.stunned=true;t.ready=false});break;
+      case 'addshield':addShield(s,e.v);break;
+      case 'energy':s.energy+=e.v;break;
+      case 'discard':discard(op,e.v);break;
+      case 'steal':if(op.hand.length&&s.hand.length<HAND_MAX){const c=op.hand.splice(Math.random()*op.hand.length|0,1)[0];s.hand.push(c);log(`${s.name}が${c.nm}を奪った`)}break;
+      case 'revive':revive(s,e.v,e.times||1);break;
+      case 'destroy':if(target){target.hp=0;log(`${target.nm}を破壊`)}break;
+      case 'weaken':if(target){target.buffA-=e.v;const b=target.hp;target.hp-=e.v;log(`　${target.nm} -${e.v}/-${e.v}：攻${atkOf(op,target)} 体力${b}→${target.hp}`)}break;
+      case 'bounce':if(target){const i=op.board.indexOf(target);if(i>=0){op.board.splice(i,1);if(op.hand.length<HAND_MAX)op.hand.push(mk(target.id))}}break;
+      case 'sacrifice':if(target){target.hp=0;log(`${target.nm}を生贄に`);cleanup();draw(s,e.v)}break;
+      case 'cataclysm':op.board.forEach(t=>hit(t,op,e.v,'全体ダメージ'));if(s.shields.length){const sh=s.shields.pop();if(s.hand.length<HAND_MAX)s.hand.push(sh);log(`${s.name}の防衛線が1枚崩れた`)}break;
+      case 'rally':s.board.forEach(t=>t.tempA+=e.v);break;
+      case 'ready':if(target){target.ready=true;target.attacks=0}break;
+      case 'charge':if(target){target.buffA+=2;target.ready=true;if(!has(target,'貫通'))target.kw.push('貫通');if(!has(target,'速攻'))target.kw.push('速攻')}break;
+      case 'supernova':op.board.forEach(t=>t.hp=0);s.board.forEach(t=>hit(t,s,3,'爆発の余波'));break;
+      case 'timewarp':s.board.forEach(t=>{t.ready=true;t.attacks=0});draw(s,1);break;
+      case 'poison':if(target){target.poison=true;log(`　${target.nm}は毒を受けた`)}break;
+      case 'poisonall':op.board.forEach(t=>{if(e.v)hit(t,op,e.v,'効果ダメージ');t.poison=true});log('　敵の艦すべてが毒を受けた');break;
+      case 'discarddraw':discard(op,e.v);draw(s,e.v);break;
+      case 'showerdraw2':op.board.forEach(t=>hit(t,op,e.v,'全体ダメージ'));draw(s,2);break;
+      case 'rebirth':s.board.forEach(t=>{t.buffA+=e.v;t.maxhp+=e.v;t.hp=t.maxhp});break;
+      case 'creation':draw(s,5);s.board.forEach(t=>{t.buffA+=2;t.hp+=2;t.maxhp+=2;t.ready=true;t.attacks=0;if(!has(t,'速攻'))t.kw.push('速攻')});break;
+      case 'finalbattle':s.board.forEach(t=>{t.buffA+=e.v;t.hp+=e.v;t.maxhp+=e.v;t.ready=true;t.attacks=0;if(!has(t,'速攻'))t.kw.push('速攻')});break;
+      case 'healall':s.board.forEach(t=>t.hp=t.maxhp);break;
+      case 'annihilate':op.board.forEach(t=>{t.hp=0});for(let i=0;i<e.v&&op.shields.length;i++){const sh=op.shields.pop();op.grave.push(sh.id);op.broken++;log(`　${op.name}の防衛線（${sh.nm}）が焼却された`,true)}break;
+      case 'collapse':[s,op].forEach(x=>{x.board.forEach(t=>t.hp=0);if(x.shields.length){const sh=x.shields.pop();x.grave.push(sh.id);if(x===op)x.broken++;log(`　${x.name}の防衛線（${sh.nm}）が焼却された`,true)}});break;
+      case 'sweep':if(op.shields.length){const sh=op.shields.pop();if(sh.t==='r'){op.grave.push(sh.id);log(`${op.name}の防衛線から${sh.nm}を破壊`,true)}else{if(op.hand.length<HAND_MAX)op.hand.push(sh);log(`${op.name}の防衛線をめくった（${sh.nm}は相手の手札へ）`)}}break;
+    }
+  }
+  const combat=E.combat=(as,a,ds,d,dry)=>{
+    const A=dry?{...a}:a,D=dry?{...d}:d;const power=atkOf(as,a),dpow=atkOf(ds,d);
+    const dodge=has(D,'回避')&&!D.dodged;const L=dry?()=>{}:log;
+    if(!dry)L(`戦闘：${a.nm}（攻${atkBreak(as,a)}／体力${a.hp}） 対 ${d.nm}（攻${atkBreak(ds,d)}／体力${d.hp}）`);
+    const dHit=()=>{if(dodge){D.dodged=true;L(`　回避：${D.nm}はダメージを受けなかった`)}else{const r=reduce(D,ds,power);const b=D.hp;D.hp-=r;L(`　${D.nm}に${r}${r!==power?`（機械ボーナスで${power}→${r}）`:''}：体力${b}→${D.hp}`)}};
+    const aHit=()=>{const r=reduce(A,as,dpow);const b=A.hp;A.hp-=r;L(`　${A.nm}に反撃${r}${r!==dpow?`（機械ボーナスで${dpow}→${r}）`:''}：体力${b}→${A.hp}`)};
+    if(has(D,'迎撃')){L(`　迎撃：${D.nm}が先に殴る`);aHit();if(A.hp<=0){L(`　${A.nm}は${D.nm}に届く前に撃沈`);return {aDies:true,dDies:false,excess:0,ah:A.hp,dh:D.hp}}dHit()}
+    else{dHit();aHit()}
+    if(!dry){if(has(a,'毒')&&d.hp>0&&!d.poison){d.poison=true;L(`　${d.nm}は毒を受けた`)}if(has(d,'毒')&&a.hp>0&&!a.poison){a.poison=true;L(`　${a.nm}は毒を受けた`)}}
+    return {ah:A.hp,dh:D.hp,aDies:A.hp<=0,dDies:D.hp<=0,excess:has(A,'貫通')&&D.hp<0?-D.hp:0};
+  };
+  function trigger(tr,as,a,ds){
+    log(`罠発動：${tr.nm}`,true);const e=tr.tr;const power=atkOf(as,a);
+    switch(e.k){
+      case 'dmgatk':hit(a,as,e.v,'罠ダメージ');break;
+      case 'reflect':hit(a,as,power,'反射');break;
+      case 'dmgall':as.board.forEach(t=>hit(t,as,e.v,'罠ダメージ'));break;
+      case 'ambush':{const c=[...ds.hand].filter(x=>x.t==='c'&&x.cost<=3&&!x.evo).sort((x,y)=>y.cost-x.cost)[0];if(c&&ds.board.length<BOARD_MAX){ds.hand.splice(ds.hand.indexOf(c),1);ds.board.push(c);log(`${c.nm}が緊急出撃`)}break}
+      case 'stun':a.stunned=true;log(`${a.nm}は麻痺した`);break;
+      case 'mirror':if(ds.board.length<BOARD_MAX){ds.board.push(mk(a.id));log(`${ds.name}の盤面に${a.nm}の鏡像`)}break;
+      case 'healall':ds.board.forEach(t=>t.hp=t.maxhp);break;
+      case 'draw':draw(ds,e.v);break;
+      case 'discard':discard(as,e.v);break;
+      case 'weakenatk':{a.buffA-=e.v;const b=a.hp;a.hp-=e.v;log(`　${a.nm} -${e.v}/-${e.v}：攻${atkOf(as,a)} 体力${b}→${a.hp}`);break}
+      case 'revive':revive(ds,e.v);break;
+      case 'destroyatk':a.hp=0;log(`${a.nm}を破壊`);break;
+      case 'poisonatk':hit(a,as,e.v,'罠ダメージ');a.poison=true;log(`　${a.nm}は毒を受けた`);break;
+      case 'poisonstun':a.poison=true;a.stunned=true;log(`　${a.nm}は毒を受け、麻痺した`);break;
+      case 'stunall':as.board.forEach(t=>{t.stunned=true;t.ready=false});log('　敵の艦すべてが麻痺');break;
+      case 'stun2':{a.stunned=true;a.ready=false;const others=as.board.filter(t=>t!==a);if(others.length){const t=others[Math.random()*others.length|0];t.stunned=true;t.ready=false;log(`　${a.nm}と${t.nm}が麻痺`)}else log(`　${a.nm}が麻痺`);break}
+      case 'minefield':as.board.forEach(t=>hit(t,as,e.v,'罠ダメージ'));hit(a,as,2,'罠ダメージ');break;
+      case 'stop':log('攻撃は空を切った');return true;
+      case 'stopshield':addShield(ds,1);log('攻撃は止められた');return true;
+      case 'bounce':{const i=as.board.indexOf(a);if(i>=0){as.board.splice(i,1);if(as.hand.length<HAND_MAX)as.hand.push(mk(a.id));log(`${a.nm}が手札に戻された`)}return true}
+    }
+    cleanup();return !as.board.includes(a);
+  }
+  function breakShields(as,a,ds,n){
+    for(let i=0;i<n&&ds.shields.length&&!E.over;i++){
+      const sh=ds.shields.pop();ds.broken++;log(`${a.nm}が${ds.name}の防衛線をブレイク：${sh.nm}`,true);
+      if(sh.t==='r'){ds.grave.push(sh.id);if(trigger(sh,as,a,ds))return true}
+      else if(ds.hand.length<HAND_MAX)ds.hand.push(sh);else{ds.grave.push(sh.id);log(`手札上限：${sh.nm}は墓地へ`)}
+    }
+    return false;
+  }
+  E.attack=(as,a,ds,d)=>{
+    if(E.over||as!==E.cur||!a||!as.board.includes(a)||!a.ready||ds!==other(as))return false;
+    if(d?(!ds.board.includes(d)||!targetable(ds,d)):hasGuard(ds))return false;
+    a.attacks++;a.ready=has(a,'連撃')&&a.attacks<2;a.stealth=false;
+    if(a.onatk){log(`攻撃時：${a.nm}`);doEffect(as,a.onatk,null,a);cleanup();if(d&&!ds.board.includes(d))d=null}
+    if(!d){
+      if(!ds.shields.length){ds.dead=true;log(`${a.nm}が${ds.name}本体に直接攻撃！`,true);E.checkEnd();return true}
+      log(`${a.nm}（攻${atkBreak(as,a)}）が${ds.name}の防衛線を攻撃${a.W?'（W：2枚）':''}`);breakShields(as,a,ds,a.W?2:1);
+    }else{if(!ds.board.includes(d))return false;const r=combat(as,a,ds,d,false);cleanup();
+      if(r.excess&&as.board.includes(a)){log(`　貫通：余った${r.excess}で防衛線へ`);breakShields(as,a,ds,1)}}
+    E.checkEnd();return true;
+  };
+  // 対象候補：{kind:'enemy'|'ally'|'evo'|null, list}
+  E.targets=(s,c)=>{
+    const op=other(s);const e=c.t==='c'?c.enter:c.eff;
+    if(c.t==='c'&&c.evo)return {kind:'evo',list:s.board.filter(x=>x.f===c.f),required:true};
+    const t=e&&e.tgt;if(!t)return {kind:null,list:[],required:false};
+    let list=t==='ally'?[...s.board]:op.board.filter(x=>!x.stealth);
+    if(e.tf&&e.tf.maxCost!=null)list=list.filter(x=>x.cost<=e.tf.maxCost);
+    if(e.k==='heal'||e.k==='repair')list=list.filter(x=>x.hp<x.maxhp||e.k==='repair');
+    return {kind:t,list,required:c.t!=='c'};
+  };
+  E.playCard=(s,c,target)=>{
+    if(E.over||s!==E.cur||!c||!s.hand.includes(c))return false;
+    const cost=costOf(s,c);if(cost>s.energy)return false;
+    const tg=E.targets(s,c);
+    if(tg.required&&(!target||!tg.list.includes(target)))return false;
+    if(target&&!tg.list.includes(target))target=null;
+    if(c.t==='c'&&!c.evo&&s.board.length>=BOARD_MAX)return false;
+    s.energy-=cost;s.hand.splice(s.hand.indexOf(c),1);(s.played=s.played||[]).push(c.id);
+    if(c.t==='c'){
+      if(c.evo){const i=s.board.indexOf(target);s.board.splice(i,1);s.grave.push(target.id);c.ready=true;s.board.splice(i,0,c);log(`${s.name}の${target.nm}が${c.nm}に進化`);target=null}
+      else{c.ready=has(c,'速攻');s.board.push(c);log(`${s.name}が${c.nm}を出した`)}
+      if(c.enter){log(`登場時：${c.nm}`);doEffect(s,c.enter,target,c)}
+    }
+    else if(c.t==='r'){s.shields.push(c);log(`${s.name}が罠を防衛線に足した`)}
+    else{log(`${s.name}が${c.nm}を使った`);s.grave.push(c.id);doEffect(s,c.eff,target,null)}
+    cleanup();E.checkEnd();return true;
+  };
+  E.checkEnd=final=>{
+    if(E.over)return;let e=null,w=null;const [A,B]=S;
+    if(B.dead){e=`${A.name}の勝ち`;w=0}else if(A.dead){e=`${B.name}の勝ち`;w=1}
+    else if(final){if(A.shields.length>B.shields.length){e=`時間切れ：${A.name}の勝ち`;w=0}else if(A.shields.length<B.shields.length){e=`時間切れ：${B.name}の勝ち`;w=1}else e='時間切れ：引き分け'}
+    if(e){E.over=true;E.result={text:e,winner:w,timeout:!!final};log('══ '+e+' ══',true)}
+  };
+  E.endTurn=()=>{
+    if(E.over)return false;E.cur.board.forEach(c=>c.tempA=0);
+    if(S[0].turns>=limit&&S[1].turns>=limit){E.checkEnd(true);return false}
+    E.cur=other(E.cur);return true;
+  };
+
+  // ===== 状態の複製（探索用） =====
+  E.snapshot=()=>structuredClone({S,cur:idx(E.cur),over:E.over,result:E.result});
+  E.fork=st=>makeEngine({names,humans,limit,levels,weights,state:st||E.snapshot()});
+  E.firstIdx=idx(E.cur);
+  E.forkHidden=meIdx=>{const st=E.snapshot();const op=st.S[1-meIdx],me=st.S[meIdx];
+    op.hand=op.hand.map(()=>mk('dust'));op.shields=op.shields.map(()=>mk('dust'));shuffle(op.deck);shuffle(me.deck);return E.fork(st)};
+
+  // ===== 評価関数 =====
+  const val=E.val=c=>Math.max(0,c.atk+c.buffA)+c.hp+(c.kw.length?1:0)+(c.W?1:0)+(c.aura?2:0)+(c.trump?3:0)-(c.poison?1.5:0)+(has(c,'覚醒')?1.5:0);
+  const weights=opts.weights||[EVAL_W,EVAL_W];
+  const handVal=s=>s.hand.reduce((a,c)=>a+1+Math.max(0,cardValue(c))*0.3,0);
+  const graveVal=s=>s.grave.reduce((a,id)=>{const c=byId[id];return a+(c.t==='c'&&c.cost<=3&&!c.evo?cardValue(c)*0.5+1:0)},0);
+  const nextAtk=(s,op)=>s.board.reduce((a,c)=>a+(c.stunned?0:atkOf(s,c)),0);
+  // 特徴量：重みは EVAL_W（自己対戦で調整できる）
+  E.features=meIdx=>{
+    const me=S[meIdx],op=S[1-meIdx];
+    return {
+      shield:me.shields.length-op.shields.length,
+      lethal:!op.shields.length?1:0, lethalPer:!op.shields.length?me.board.filter(c=>!c.stunned).length:0,
+      dead:!me.shields.length?1:0, deadPer:!me.shields.length?op.board.filter(c=>!c.stunned).length:0,
+      board:me.board.reduce((a,c)=>a+val(c),0)-op.board.reduce((a,c)=>a+val(c),0),
+      guard:(hasGuard(me)?1:0)-(hasGuard(op)?1:0),
+      hand:handVal(me)-handVal(op),
+      energy:-Math.max(0,me.energy-ENERGY_CARRY),
+      carry:Math.min(ENERGY_CARRY,me.energy),
+      broken:-op.broken,
+      stun:op.board.filter(c=>c.stunned).reduce((a,c)=>a+atkOf(op,c),0)-me.board.filter(c=>c.stunned).reduce((a,c)=>a+atkOf(me,c),0),
+      grave:graveVal(me)-graveVal(op),
+      atkNext:nextAtk(me,op)-nextAtk(op,me),
+      deck:Math.min(me.deck.length,5)-Math.min(op.deck.length,5),
+      shieldLow:(me.shields.length<=1?-1:0)+(op.shields.length<=1?1:0),
+    };
+  };
+  E.evaluate=meIdx=>{
+    if(E.over){const w=E.result?E.result.winner:null;return w===meIdx?1000:w==null?0:-1000}
+    const f=E.features(meIdx),W=weights[meIdx];let v=0;for(const k in f)v+=f[k]*(W[k]||0);return v;
+  };
+
+  // ===== 行動の適用 =====
+  const findU=(arr,u)=>arr.find(x=>x.u===u);
+  E.apply=act=>{
+    const me=E.cur,op=other(me);
+    if(act.k==='play'){const c=findU(me.hand,act.u);const tg=act.tu!=null?(findU(op.board,act.tu)||findU(me.board,act.tu)):null;return E.playCard(me,c,tg)}
+    if(act.k==='burn')return E.burn(me,findU(me.hand,act.u));
+    if(act.k==='attack'){const target=act.tu!=null?findU(op.board,act.tu):null;if(act.tu!=null&&!target)return false;return E.attack(me,findU(me.board,act.u),op,target)}
+    return false;
+  };
+
+  // ===== 初級AI =====
+  const bestTarget=(c,me,op)=>{
+    const tg=E.targets(me,c);if(!tg.kind)return {tg:null,bonus:0};
+    const list=tg.list;if(!list.length)return {tg:null,bonus:tg.required?-9:0};
+    const e=c.t==='c'?c.enter:c.eff;
+    if(tg.kind==='evo')return {tg:[...list].sort((a,b)=>val(a)-val(b))[0],bonus:1};
+    if(tg.kind==='ally'){
+      if(e.k==='sacrifice')return {tg:[...list].sort((a,b)=>val(a)-val(b))[0],bonus:list.length>=2?2:-9};
+      if(e.k==='heal'||e.k==='repair')return {tg:[...list].sort((a,b)=>val(b)-val(a))[0],bonus:2};
+      return {tg:[...list].sort((a,b)=>b.atk-a.atk)[0],bonus:2};
+    }
+    const dmg={dmg:e.v,dmgdraw:e.v,weaken:e.v}[e.k]||0;
+    if(e.k==='destroy'||e.k==='bounce'||e.k==='stun'){const x=[...list].sort((a,b)=>val(b)-val(a))[0];return {tg:x,bonus:e.k==='stun'?2:x.cost>=3?val(x)-1:1}}
+    const kill=list.filter(x=>x.hp<=dmg).sort((a,b)=>val(b)-val(a))[0];
+    if(kill)return {tg:kill,bonus:val(kill)+1};
+    const strong=[...list].sort((a,b)=>val(b)-val(a))[0];
+    return {tg:strong,bonus:c.t==='c'?0:(e.k==='dmgdraw'?1:-9)};
+  };
+  E.greedyTurn=async(noise=0)=>{
+    const me=E.cur,op=other(me);
+    const evalHand=()=>me.hand.map(c=>{
+      let v=-1;const {tg,bonus}=bestTarget(c,me,op);const enemies=op.board.filter(x=>!x.stealth);
+      if(c.t==='c'){if(c.evo?tg:me.board.length<BOARD_MAX){v=c.atk+c.hp+c.cost*0.2+(c.trump?2:0)+bonus+(c.aura?1:0);
+        const e=c.enter;if(e){if(e.k==='sweep')v+=op.shields.length?1.5:-2;if(e.k==='allatk')v+=me.board.length;if(e.k==='dmgall')v+=enemies.filter(x=>x.hp<=e.v).length*2;if(e.k==='addshield')v+=me.shields.length<=2?3:1;if(e.k==='revive')v+=me.grave.some(id=>byId[id].t==='c')?2:-1}}}
+      else if(c.t==='r'){if(me.shields.length<=2)v=3;else if(me.shields.length<=4&&me.energy>=4)v=1}
+      else{const e=c.eff;
+        if(e.tgt)v=(tg&&bonus>0)?bonus:-1;
+        else if(e.k==='addshield')v=me.shields.length<=2?4:me.shields.length<=4?1.5:-1;
+        else if(e.k==='dmgall'){const k=enemies.filter(x=>x.hp<=e.v).length;if(k>=2)v=k*4}
+        else if(e.k==='showerdraw'||e.k==='cataclysm'){const k=enemies.filter(x=>x.hp<=e.v).length;v=k*3+(e.k==='cataclysm'?-2:1)}
+        else if(e.k==='supernova'){const gain=op.board.reduce((a,x)=>a+val(x),0)-me.board.filter(x=>x.hp<=3).reduce((a,x)=>a+val(x),0);if(gain>=8)v=gain}
+        else if(e.k==='timewarp'){const n=me.board.filter(x=>!x.ready).length;if(n>=2)v=n*3}
+        else if(e.k==='rally'){const n=me.board.filter(x=>x.ready).length;if(n>=2&&!hasGuard(op))v=n*2}
+        else if(e.k==='draw'){if(me.hand.length<=3)v=3}
+        else if(e.k==='buffalldraw')v=me.board.length*1.5;
+        else if(e.k==='stunall')v=op.board.length*1.5;
+        else if(e.k==='discard')v=op.hand.length>=3?3:0;
+        else if(e.k==='revive')v=me.grave.some(id=>byId[id].t==='c'&&byId[id].cost<=e.v)?4:-1;}
+      return {c,v:v+Math.random()*noise,tg,cost:costOf(me,c)}}).filter(o=>o.v>0).sort((a,b)=>b.v-a.v);
+    let acted=true;
+    while(acted&&!E.over){acted=false;
+      let opts=evalHand();const aff=opts.filter(o=>o.cost<=me.energy);
+      if(!aff.length&&!me.burned&&me.hand.length>=3){const want=opts.find(o=>o.cost===me.energy+1);
+        if(want){const fuel=[...me.hand].filter(x=>x!==want.c).sort((a,b)=>(a.cost+(a.trump?9:0))-(b.cost+(b.trump?9:0)))[0];if(fuel){E.burn(me,fuel);onRender();continue}}}
+      if(aff.length){const o=aff[0];if(E.playCard(me,o.c,o.tg)){acted=true;onRender();await wait(600)}}
+    }
+    const myPow=me.board.reduce((s,x)=>s+val(x),0),opPow=op.board.reduce((s,x)=>s+val(x),0);
+    let loop=0;
+    while(!E.over&&loop++<12){
+      const a=me.board.find(x=>x.ready);if(!a)break;
+      let target=null,doAttack=true;
+      const cands=op.board.filter(d=>targetable(op,d));
+      if(hasGuard(op)){
+        const best=cands.map(d=>({d,r:combat(me,a,op,d,true)})).sort((x,y)=>(y.r.dDies-x.r.dDies)||(x.r.aDies-y.r.aDies))[0];
+        target=best.d;if(best.r.aDies&&!best.r.dDies)doAttack=false;
+      }else if(!op.shields.length)target=null;
+      else{
+        const sims=cands.map(d=>({d,r:combat(me,a,op,d,true)}));
+        const safe=sims.filter(s=>s.r.dDies&&!s.r.aDies).sort((x,y)=>val(y.d)-val(x.d))[0];
+        const trade=sims.filter(s=>s.r.dDies&&s.r.aDies&&val(s.d)>val(a)).sort((x,y)=>val(y.d)-val(x.d))[0];
+        target=safe?safe.d:trade?trade.d:null;
+        if(!target){const pressure=myPow>=opPow*0.8||op.shields.length<=2||me.shields.length>=4;
+          if(!pressure){if(me.shields.length<=2&&cands.length)target=[...cands].sort((x,y)=>atkOf(op,y)-atkOf(op,x))[0];else doAttack=false}}
+      }
+      if(noise&&Math.random()<noise*0.15)doAttack=!doAttack;
+      if(!doAttack){a.ready=false;continue}
+      E.attack(me,a,op,target);onRender();await wait(600);
+    }
+    me.board.forEach(x=>x.ready=false);
+  };
+
+  // ===== 中級・上級AI：探索 =====
+  E.searchTurn=async cfg=>{
+    const meIdx=idx(E.cur);
+    const root=E.forkHidden(meIdx);
+    const playStates=[];let nodes=0;
+    const enumPlays=(F)=>{
+      const me=F.cur,op=F.other(me);const acts=[];
+      me.hand.forEach(c=>{
+        const cost=F.costOf(me,c);if(cost>me.energy)return;
+        if(c.t==='c'&&!c.evo&&me.board.length>=BOARD_MAX)return;
+        const tg=F.targets(me,c);
+        if(!tg.kind){acts.push({k:'play',u:c.u,tu:null});return}
+        let cands=[...tg.list];const e=c.t==='c'?c.enter:c.eff;
+        if(tg.kind==='enemy'){const dmg=e&&({dmg:e.v,dmgdraw:e.v,weaken:e.v}[e.k]||0);cands.sort((a,b)=>((b.hp<=dmg)-(a.hp<=dmg))||(val(b)-val(a)))}
+        else if(e&&e.k==='sacrifice')cands.sort((a,b)=>val(a)-val(b));
+        else if(tg.kind==='evo')cands.sort((a,b)=>val(a)-val(b));
+        else cands.sort((a,b)=>val(b)-val(a));
+        cands.slice(0,3).forEach(x=>acts.push({k:'play',u:c.u,tu:x.u}));
+        if(!cands.length&&!tg.required)acts.push({k:'play',u:c.u,tu:null});
+      });
+      if(!me.burned&&me.hand.length>=2){
+        const needs=me.hand.some(c=>F.costOf(me,c)===me.energy+1&&(c.t!=='c'||c.evo||me.board.length<BOARD_MAX));
+        if(needs){const fuel=[...me.hand].sort((a,b)=>(a.cost+(a.trump?9:0)+(a.t==='r'?2:0))-(b.cost+(b.trump?9:0)+(b.t==='r'?2:0)))[0];acts.push({k:'burn',u:fuel.u})}
+      }
+      return acts;
+    };
+    const dfsPlay=(F,acts,depth)=>{
+      playStates.push({F,acts});
+      if(depth>=cfg.depth||nodes>cfg.playCap||F.over)return;
+      const cand=enumPlays(F);
+      cand.sort((a,b)=>{const ca=F.cur.hand.find(x=>x.u===a.u),cb=F.cur.hand.find(x=>x.u===b.u);return (cb?cb.cost:0)-(ca?ca.cost:0)});
+      for(const a of cand.slice(0,5)){
+        if(nodes>cfg.playCap)break;
+        const G=F.fork();if(!G.apply(a))continue;nodes++;
+        dfsPlay(G,[...acts,a],depth+1);
+      }
+    };
+    dfsPlay(root,[],0);
+    const ranked=playStates.map(p=>({...p,s:p.F.evaluate(meIdx)})).sort((a,b)=>b.s-a.s).slice(0,cfg.keep);
+    const enumAttacks=(F,acts,skipped,out,budget)=>{
+      const me=F.cur,op=F.other(me);
+      const a=me.board.find(x=>x.ready&&!skipped.has(x.u));
+      if(!a||F.over){out.push({F,acts});return}
+      if(out.length>=budget)return;
+      const opts=[];
+      const cands=op.board.filter(d=>F.targetable(op,d)).map(d=>({d,r:F.combat(me,a,op,d,true)}))
+        .sort((x,y)=>((y.r.dDies&&!y.r.aDies)-(x.r.dDies&&!x.r.aDies))||(y.r.dDies-x.r.dDies)||(val(y.d)-val(x.d)));
+      if(!F.hasGuard(op))opts.push(null);
+      cands.slice(0,3).forEach(x=>opts.push(x.d.u));
+      opts.push('skip');
+      for(const o of opts){
+        if(out.length>=budget)return;
+        if(o==='skip'){const sk=new Set(skipped);sk.add(a.u);enumAttacks(F,acts,sk,out,budget);continue}
+        const G=F.fork();const act={k:'attack',u:a.u,tu:o};if(!G.apply(act))continue;
+        enumAttacks(G,[...acts,act],skipped,out,budget);
+      }
+    };
+    let finals=[];
+    for(const p of ranked){const out=[];enumAttacks(p.F,p.acts,new Set(),out,cfg.attackCap);finals.push(...out)}
+    finals.forEach(f=>f.s=f.F.evaluate(meIdx));
+    finals.sort((a,b)=>b.s-a.s);
+    // ロールアウト：上位候補から初級同士で数ターン先まで進めて、勝ち負けで補正する
+    if(cfg.rollouts&&finals.length){
+      const top=finals.slice(0,cfg.rollouts);
+      for(const f of top){
+        if(f.F.over){f.r=f.s>0?1:-1;continue}
+        let sum=0;
+        for(let i=0;i<cfg.rolloutN;i++){
+          const st=f.F.snapshot();const op=st.S[1-meIdx];
+          const realHand=E.S[1-meIdx].hand.length;const pool=shuffle([...op.deck]);op.hand=pool.splice(0,Math.min(realHand,pool.length));op.deck=pool;
+          const G=f.F.fork(st);let t=0;
+          while(!G.over&&t++<cfg.rolloutTurns*2){if(!G.endTurn())break;G.beginTurn(G.cur);if(G.over)break;await G.greedyTurn(cfg.rolloutNoise||0)}
+          if(G.over){const w=G.result?G.result.winner:null;sum+=w===meIdx?1:w==null?0:-1}
+          else sum+=Math.tanh(G.evaluate(meIdx)/30);
+        }
+        f.r=sum/cfg.rolloutN;
+      }
+      top.forEach(f=>f.s=f.s*0.5+f.r*(cfg.rolloutW||40));top.sort((a,b)=>b.s-a.s);finals=top;
+    }
+    if(cfg.reply&&finals.length){
+      const top=finals.slice(0,cfg.reply);
+      // 相手の手札を「見えていない札」から先に数通り作り、全候補に同じ手札を使う（候補間の比較をぶれさせない）
+      const opReal=E.S[1-meIdx];const unseen=[...opReal.deck,...opReal.hand].map(c=>c.id);
+      const hands=[];for(let i=0;i<cfg.samples;i++){hands.push(shuffle([...unseen]).slice(0,opReal.hand.length))}
+      for(const f of top){
+        if(f.F.over){f.s2=f.s;continue}
+        let sum=0;
+        for(const h of hands){
+          const st=f.F.snapshot();const op=st.S[1-meIdx];
+          op.hand=h.map(id=>mk(id));const used=[...h];op.deck=shuffle(unseen.filter(id=>{const i=used.indexOf(id);if(i>=0){used.splice(i,1);return false}return true}).map(id=>mk(id)));
+          const G=f.F.fork(st);if(!G.endTurn()){sum+=G.evaluate(meIdx);continue}
+          G.beginTurn(G.cur);if(cfg.replySearch){const ra=await G.searchTurn(cfg.replySearch);for(const a of ra){if(G.over)break;if(!G.apply(a))break}}else await G.greedyTurn(0);G.endTurn();
+          sum+=G.evaluate(meIdx);
+        }
+        f.s2=sum/hands.length*(cfg.replyW||0.7)+f.s*(1-(cfg.replyW||0.7));
+      }
+      top.sort((a,b)=>b.s2-a.s2);finals=top;
+    }
+    E.lastCandidates=finals.slice(0,3).map(f=>({acts:f.acts,s:+(f.s2!=null?f.s2:f.s).toFixed(1),desc:describeActs(E,f.acts)}));
+    return finals.length?finals[0].acts:[];
+  };
+
+  E.cpuTurn=async(level)=>{
+    level=level||levels[idx(E.cur)]||2;const cfg=LEVELS[level];
+    await wait(400);E.lastCandidates=null;
+    if(cfg.greedy){await E.greedyTurn(cfg.noise);return}
+    const acts=await E.searchTurn(cfg);
+    for(const a of acts){if(E.over)break;if(!E.apply(a))break;onRender();await wait(550)}
+    E.cur.board.forEach(x=>x.ready=false);
+  };
+  return E;
+}
+// ===== AI同士の自動対戦 =====
+// mode: 'draft'（プールからドラフト） / 'deck'（自動構築デッキからランダムピック）
+async function simulate(n,limit=12,levels=[2,2],progress=()=>{},mode='draft',weights){
+  const stat={games:0,p1win:0,draw:0,timeout:0,turns:0,cards:{},fac:{},levels};
+  activeCards().forEach(c=>stat.cards[c.id]={in:0,win:0,played:0,pwin:0});
+  for(let g=0;g<n;g++){
+    let decks;
+    if(mode==='deck'){decks=[randomPick(cpuBuildDeck()),randomPick(cpuBuildDeck())]}
+    else{const packs=dealPacks(fullPool());decks=[[],[]];for(let r=0;r<DRAFT_ROUNDS;r++){decks[0].push(...cpuDraft(packs[0][r],decks[0]));decks[1].push(...cpuDraft(packs[1][r],decks[1]))}}
+    const shieldIdx=[cpuShields(decks[0]),cpuShields(decks[1])];
+    const E=makeEngine({decks,shieldIdx,names:['A','B'],humans:[false,false],limit,levels,weights});
+    let safety=0;
+    while(!E.over&&safety++<200){E.beginTurn(E.cur);if(E.over)break;await E.cpuTurn();if(!E.endTurn())break}
+    const r=E.result||{winner:null,timeout:true};
+    stat.games++;if(r.winner===0)stat.p1win++;if(r.winner==null)stat.draw++;if(r.timeout)stat.timeout++;
+    stat.turns+=E.S[0].turns+E.S[1].turns;
+    decks.forEach((d,i)=>{new Set(d).forEach(id=>{stat.cards[id].in++;if(r.winner===i)stat.cards[id].win++});new Set(E.S[i].played||[]).forEach(id=>{stat.cards[id].played++;if(r.winner===i)stat.cards[id].pwin++});
+      const f=FACTIONS.map(f=>[f,d.filter(x=>byId[x].f===f).length]).sort((a,b)=>b[1]-a[1])[0][0];
+      stat.fac[f]=stat.fac[f]||{in:0,win:0};stat.fac[f].in++;if(r.winner===i)stat.fac[f].win++});
+    progress(g+1);await new Promise(r=>setTimeout(r,0));
+  }
+  return stat;
+}
+const LEVEL_NAME={1:'初級',2:'中級',3:'上級',4:'戦略級'};
+// ===== 重みの自動調整（座標上昇法）=====
+// 各重みを ×1.5 / ×0.67 した候補を現行と対戦させ、勝率55%超なら採用
+async function tuneWeights(rounds=1,gamesPer=100,progress=()=>{},mode='deck'){
+  let W={...EVAL_W};const keys=Object.keys(W);const logs=[];
+  const duel=async(A,B)=>{let win=0,tot=0;
+    const s1=await simulate(gamesPer/2|0,12,[2,2],()=>{},mode,[A,B]);win+=s1.p1win;tot+=s1.games-s1.draw;
+    const s2=await simulate(gamesPer/2|0,12,[2,2],()=>{},mode,[B,A]);win+=s2.games-s2.draw-s2.p1win;tot+=s2.games-s2.draw;
+    return tot?win/tot:0.5};
+  for(let r=0;r<rounds;r++)for(const k of keys){
+    for(const m of [1.5,0.67]){
+      const C={...W,[k]:+(W[k]*m).toFixed(2)};const wr=await duel(C,W);
+      const msg=`${k}: ${W[k]}→${C[k]} 勝率${(wr*100).toFixed(0)}%`+(wr>0.55?' 採用':'');logs.push(msg);progress(msg);
+      if(wr>0.55){W=C;break}
+    }
+  }
+  return {W,logs};
+}
+function simReport(st,full=true){
+  const pct=(a,b)=>b?(100*a/b).toFixed(0)+'%':'-';
+  let out=`試合数 ${st.games}／先手（${LEVEL_NAME[st.levels[0]]}）勝率 ${pct(st.p1win,st.games-st.draw)}／後手（${LEVEL_NAME[st.levels[1]]}）勝率 ${pct(st.games-st.draw-st.p1win,st.games-st.draw)}／引き分け ${st.draw}／時間切れ ${pct(st.timeout,st.games)}／平均 ${(st.turns/st.games/2).toFixed(1)}ターン（片側）\n`;
+  if(!full)return out;
+  out+='\n主勢力ごとの勝率\n';Object.entries(st.fac).forEach(([f,v])=>out+=`  ${f} ${pct(v.win,v.in)}（${v.in}デッキ）\n`);
+  const rows=activeCards().map(c=>({c,...st.cards[c.id],wr:st.cards[c.id].in?st.cards[c.id].win/st.cards[c.id].in:0})).filter(r=>r.in>=10).sort((a,b)=>b.wr-a.wr);
+  const line=r=>`  ${r.c.nm}${r.c.trump?'★':''} 入${pct(r.win,r.in)}（${r.in}） 使${pct(r.pwin,r.played)}（${r.played}） 使用率${pct(r.played,r.in)}\n`;
+  out+='\n入＝デッキに入っていたときの勝率／使＝実際に使ったときの勝率／使用率＝入っていて使われた率\n（上位）\n';rows.slice(0,12).forEach(r=>out+=line(r));
+  out+='\n（下位）\n';rows.slice(-12).reverse().forEach(r=>out+=line(r));
+  const unused=rows.filter(r=>r.played/r.in<0.3).sort((a,b)=>a.played/a.in-b.played/b.in).slice(0,8);
+  if(unused.length){out+='\n使われにくいカード（CPUの評価が低い可能性）\n';unused.forEach(r=>out+=line(r))}
+  return out;
+}
+if(typeof module!=="undefined")module.exports={CARDS,FACTIONS,makeEngine,simulate,simReport,cpuDraft,cpuShields,dealPacks,fullPool,cpuBuildDeck,randomPick,deckPacks,cardText,tuneWeights,EVAL_W,LEVELS,randomDeck,cpuTowerDeck,towerLevel,CARD_STRENGTH,deckScore,measureStrength,activeCards,setSets:s=>{ACTIVE_SETS=s}};
+
+</script>
+<script id="planner">// v0.16: time-bounded mixed-action beam search with sampled hidden information.
+// The planner consumes a public observation: no opponent hand, deck or shield IDs.
+function publicObservation(E){
+  const st=E.snapshot(), me=st.cur, op=st.S[1-me];
+  op.hand=op.hand.map(()=>null);op.deck=op.deck.map(()=>null);op.shields=op.shields.map(()=>null);
+  // Own remaining cards are known as a multiset, their order is not.
+  const own=st.S[me];own.unknown=own.deck.concat(own.shields).map(c=>c.id);
+  own.deck=own.deck.map(()=>null);own.shields=own.shields.map(()=>null);
+  return st;
+}
+function legalActions(F){
+  if(F.over)return [];
+  const me=F.cur,op=F.other(me),acts=[];
+  for(const c of me.hand){
+    if(F.costOf(me,c)>me.energy||(c.t==='c'&&!c.evo&&me.board.length>=BOARD_MAX))continue;
+    const tg=F.targets(me,c);
+    if(tg.list.length)for(const d of tg.list)acts.push({k:'play',u:c.u,tu:d.u});
+    if(!tg.required)acts.push({k:'play',u:c.u,tu:null});
+  }
+  for(const c of me.board)if(c.ready){
+    if(!F.hasGuard(op))acts.push({k:'attack',u:c.u,tu:null});
+    for(const d of op.board)if(F.targetable(op,d))acts.push({k:'attack',u:c.u,tu:d.u});
+  }
+  if(!me.burned&&me.hand.length>1&&me.hand.some(c=>F.costOf(me,c)===me.energy+1))
+    for(const c of me.hand)acts.push({k:'burn',u:c.u});
+  return acts;
+}
+function sampleObservation(obs){
+  const st=structuredClone(obs),me=st.S[st.cur],op=st.S[1-st.cur];
+  const maximum=Math.max(0,...st.S.flatMap(s=>s.board.concat(s.hand).filter(Boolean).map(c=>c.u||0)));
+  uid=Math.max(uid,maximum+1);
+  const unknown=shuffle([...me.unknown]);delete me.unknown;
+  me.deck=me.deck.map(()=>mk(unknown.pop()||'dust'));me.shields=me.shields.map(()=>mk(unknown.pop()||'dust'));
+  const seen=op.board.map(c=>c.id).concat(op.grave),count={};seen.forEach(id=>count[id]=(count[id]||0)+1);
+  const factions=FACTIONS.map(f=>({f,n:seen.filter(id=>byId[id]&&byId[id].f===f).length})).sort((a,b)=>b.n-a.n);
+  const main=factions[0].n?factions[0].f:null;
+  const bag=[];for(const c of activeCards())for(let n=0;n<Math.max(0,c.n-(count[c.id]||0));n++)bag.push(c.id);
+  function take(){
+    let eligible=bag.map((id,i)=>({id,i}));
+    if(main&&Math.random()<.7){const fit=eligible.filter(x=>byId[x.id].f===main||byId[x.id].f==='共通');if(fit.length)eligible=fit}
+    const pick=eligible[Math.random()*eligible.length|0];return mk(pick?bag.splice(pick.i,1)[0]:'dust');
+  }
+  op.hand=op.hand.map(take);op.shields=op.shields.map(take);op.deck=op.deck.map(take);
+  return st;
+}
+function beamTurn(root,view,deadline,width,maxDepth,stats){
+  let beam=[{F:root,acts:[],s:root.evaluate(view)}],finals=[...beam];
+  const key=F=>JSON.stringify(F.S.map(s=>[s.energy,s.burned,s.shields.map(c=>c.id),s.hand.map(c=>[c.id,c.u]),s.board.map(c=>[c.u,c.hp,c.buffA,c.tempA,c.ready,c.attacks,c.stealth,c.dodged,c.poison,c.stunned,c.maxhp,c.undyingUsed,c.kw]),s.grave,s.deck.map(c=>c.id)]));
+  const seen=new Set([key(root)]);
+  for(let d=0;d<maxDepth&&performance.now()<deadline;d++){
+    const next=[];
+    for(const node of beam){
+      if(node.F.over)continue;
+      for(const act of legalActions(node.F)){
+        if(performance.now()>=deadline)break;
+        const F=node.F.fork();stats.nodes++;
+        if(!F.apply(act))continue;
+        const k=key(F);if(seen.has(k))continue;seen.add(k);
+        const acts=node.acts.concat(act),s=F.evaluate(view);
+        next.push({F,acts,s});
+      }
+      if(performance.now()>=deadline)break;
+    }
+    if(!next.length)break;
+    next.sort((a,b)=>b.s-a.s||a.acts.length-b.acts.length);
+    finals.push(...next.slice(0,width*2));beam=next.slice(0,width);
+  }
+  finals.sort((a,b)=>b.s-a.s||a.acts.length-b.acts.length);
+  // Keep different first moves, so one promising sequence cannot crowd out all alternatives.
+  const firsts=new Set(),out=[];
+  for(const f of finals){const k=JSON.stringify(f.acts[0]||null);if(firsts.has(k))continue;firsts.add(k);out.push(f);if(out.length>=6)break}
+  return out;
+}
+function deepPlan(obs,level=3,budget=1000,limit=12){
+  const start=performance.now(),deadline=start+Math.max(10,budget),view=obs.cur;
+  const stats={nodes:0,depth:1,samples:0,ms:0},width=level>=4?14:level>=3?10:6;
+  const make=()=>makeEngine({state:sampleObservation(obs),limit});
+  let root=make();
+  let top=beamTurn(root,view,start+budget*(level>=3?.3:.94),width,level>=4?12:8,stats).slice(0,level>=4?4:3);
+  if(!top.length)top=[{F:root,acts:[],s:root.evaluate(view)}];
+  let ranking=top.map(f=>({act:f.acts[0]||null,s:f.s,base:f.s}));
+  // Complete a whole comparison before adopting it. A timeout never favors a half-evaluated branch.
+  if(level>=3&&budget>=120){
+    let sums=top.map(()=>0),round=0;
+    while(round<4&&performance.now()<deadline-30){
+      const sampled=make(),scores=[];let completed=true;
+      for(let i=0;i<top.length;i++){
+        const share=(deadline-performance.now())/Math.max(1,(top.length-i)*2);
+        if(share<10){completed=false;break}
+        let F=sampled.fork();
+        if(top[i].acts[0]&&!F.apply(top[i].acts[0])){scores.push(-1000);continue}
+        const rest=top[i].acts[0]?beamTurn(F,view,Math.min(deadline,performance.now()+share*.25),Math.max(3,width>>1),6,stats)[0]:null;
+        if(rest)F=rest.F;
+        if(F.over){scores.push(F.evaluate(view));continue}
+        if(!F.endTurn()){scores.push(F.evaluate(view));continue}F.beginTurn(F.cur);
+        // Strongest sampled opponent reply, then our best continuation (three full turns at level 4).
+        const reply=beamTurn(F,1-view,Math.min(deadline,performance.now()+share*.55),Math.max(4,width>>1),7,stats)[0];
+        if(reply)F=reply.F;
+        let depth=2;
+        if(level>=4&&!F.over&&F.endTurn()){
+          F.beginTurn(F.cur);
+          const back=beamTurn(F,view,Math.min(deadline,performance.now()+share*.6),Math.max(3,width>>1),7,stats)[0];
+          if(back)F=back.F;depth=3;
+        }
+        if(performance.now()>=deadline){completed=false;break}
+        stats.depth=Math.max(stats.depth,depth);scores.push(F.evaluate(view));
+      }
+      if(!completed||scores.length!==top.length)break;
+      scores.forEach((s,i)=>sums[i]+=s);round++;stats.samples=round;
+      ranking=top.map((f,i)=>({act:f.acts[0]||null,s:sums[i]/round,base:f.s}));
+      if(deadline-performance.now()<80)break;
+    }
+  }
+  ranking.sort((a,b)=>b.s-a.s||b.base-a.base);
+  stats.ms=Math.round(performance.now()-start);
+  return {act:ranking[0].act,candidates:ranking.slice(0,3).map(x=>({act:x.act,s:+x.s.toFixed(1)})),stats};
+}
+</script>
+
+<script>
+const SETTINGS={mode:'cpu',limit:12,level:2,gt:'deck',pick:'random',myDeck:'',cpuDeck:'auto',sets:2,thinkMs:3000};
+function setSetsUI(n){SETTINGS.sets=n;saveSettings()}
+function applySets(){ACTIVE_SETS=SETTINGS.sets===1?[1]:[1,2]}
+const $=id=>document.getElementById(id);
+const waitMs=ms=>new Promise(r=>setTimeout(r,ms));
+const COLORS={'艦隊':'#efa383','機械':'#8fc4e5','星霊':'#9fd3b5','深淵':'#bca4e7','共通':'#c6cbd1'};
+const SYMBOLS={
+ '艦隊':'<path d="M32 7 48 47 32 39 16 47Z"/><path d="m32 17 0 22M22 47l-3 10m13-14v13m10-9 3 10"/>',
+ '機械':'<path d="m32 7 22 12v26L32 57 10 45V19Z"/><path d="m32 19 11 7v13l-11 7-11-7V26Z"/><path d="M32 7v12m22 0-11 7m11 19-11-6M32 46v11M10 45l11-6M10 19l11 7"/>',
+ '星霊':'<path d="m32 5 7 19 20 8-20 8-7 19-7-19-20-8 20-8Z"/><circle cx="32" cy="32" r="9"/><path d="m11 10 5 5m33 34 5 5m-1-44-5 5M15 49l-5 5"/>',
+ '深淵':'<path d="M45 8C9 6 4 49 35 57c-15-12-10-38 10-49Z"/><path d="m44 23 4 9 10 4-10 4-4 10-4-10-10-4 10-4Z"/>',
+ '共通':'<circle cx="32" cy="32" r="21"/><path d="m32 8 6 17 18 7-18 7-6 17-6-17-18-7 18-7Z"/>'
+};
+function emblem(f){return `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">${SYMBOLS[f]||SYMBOLS['共通']}</svg>`}
+function esc(t){return String(t??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
+function cardEl(c,cls=''){
+ const e=document.createElement('div');e.className='card '+cls+(c.trump?' trump':'')+(c.evo?' evo':'')+(c.stealth?' stealth':'');
+ e.style.setProperty('--fc',COLORS[c.f]);e.tabIndex=0;e.setAttribute('role','button');e.setAttribute('aria-label',`${c.nm}、コスト${c.cost}、${cardText(c)}`);e.dataset.card=c.id;
+ const s=owner(c),atk=s?G.atkOf(s,c):c.atk+(c.buffA||0)+(c.tempA||0);
+ e.innerHTML=`<div class="cost">${c.cost}</div><div class="fac ${c.f}">${c.f}${c.t==='s'?' 呪文':c.t==='r'?' 罠':''}</div><div class="nm">${c.trump?'★ ':''}${esc(c.nm)}</div><div class="card-symbol">${emblem(c.f)}</div><div class="tx">${esc(cardText(c)||'効果なし')}</div>${c.t==='c'?`<div class="st"><span class="a"><small>攻</small>${atk}</span><span class="h"><small>体</small>${c.hp}</span></div>`:''}<button class="info" type="button" aria-label="${esc(c.nm)}の詳細">ⓘ</button>`;
+ e.querySelector('.info').onclick=ev=>{ev.stopPropagation();showCard(c)};
+ e.onclick=()=>showCard(c);e.onkeydown=ev=>{if(ev.target===e&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();e.click()}};
+ return e;
+}
+
+const owner=c=>G&&G.S?(G.S.find(s=>s.board.includes(c))||null):null;
+const backEl=()=>{const e=document.createElement('div');e.className='card back static tiny';e.innerHTML='<div class="nm">防</div>';return e};
+const log=(t,hi)=>{const l=$('log');const p=document.createElement('p');if(hi)p.className='hi';p.textContent=t;l.prepend(p);if($('latestEvent'))$('latestEvent').textContent=t;while(l.children.length>180)l.lastChild.remove()};
+const msg=t=>$('msg').textContent=t;
+
+const SCREENS=['scrTitle','scrSettings','scrTower','scrSwap','scrBuilder','scrPool','scrRules','scrSim','scrPass','scrDraft','scrShield','scrBattle'];
+function go(id){const changed=activeScreen!==id;if(changed)closeSheet();SCREENS.forEach(s=>$(s).classList.toggle('hidden',s!==id));document.body.dataset.screen=id;activeScreen=id;if(changed)window.scrollTo(0,0);if(id==='scrTitle')updateResume()}
+// ---- 設定 ----
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function loadSettings(){Object.assign(SETTINGS,store.get('seiiki_settings',{}))}
+function saveSettings(){store.set('seiiki_settings',SETTINGS);applySets();refreshSettingsUI()}
+function setMode(m){SETTINGS.mode=m;saveSettings()}
+function setLevel(n){SETTINGS.level=n;saveSettings()}
+function setLimit(n){SETTINGS.limit=n;saveSettings()}
+function setGT(g){SETTINGS.gt=g;saveSettings()}
+function setPick(p){SETTINGS.pick=p;saveSettings()}
+function refreshSettingsUI(){
+  $('optCpu').classList.toggle('on',SETTINGS.mode==='cpu');$('optHuman').classList.toggle('on',SETTINGS.mode==='human');
+  [1,2,3,4].forEach(k=>$('lv'+k).classList.toggle('on',k===SETTINGS.level));
+  [10,12,14].forEach(k=>$('lim'+k).classList.toggle('on',k===SETTINGS.limit));
+  $('gtDeck').classList.toggle('on',SETTINGS.gt==='deck');$('gtDraft').classList.toggle('on',SETTINGS.gt==='draft');
+  $('pkRandom').classList.toggle('on',SETTINGS.pick==='random');$('pkPack').classList.toggle('on',SETTINGS.pick==='pack');
+  $('pickOpt').style.opacity=SETTINGS.gt==='deck'?1:.4;
+  $('set1').classList.toggle('on',SETTINGS.sets===1);$('set12').classList.toggle('on',SETTINGS.sets!==1);
+  $('thinkTime').value=SETTINGS.thinkMs||3000;const decks=getDecks();const names=Object.keys(decks);
+  const fill=(sel,extra)=>{const cur=sel.value;sel.innerHTML=extra+names.map(n=>`<option value="${esc(n)}">${esc(n)}（${decks[n].length}枚）</option>`).join('')};
+  fill($('selMyDeck'),names.length?'':'<option value="">（デッキがありません）</option>');fill($('selCpuDeck'),'<option value="auto">CPUが自動で組む（ランダムな勢力）</option>');
+  if(names.includes(SETTINGS.myDeck))$('selMyDeck').value=SETTINGS.myDeck;else SETTINGS.myDeck=names[0]||'';
+  $('selCpuDeck').value=SETTINGS.cpuDeck==='auto'||!names.includes(SETTINGS.cpuDeck)?'auto':SETTINGS.cpuDeck;
+  $('modeLabel').textContent=`（${SETTINGS.gt==='deck'?'構築：'+(SETTINGS.myDeck||'デッキ未選択'):'ドラフト'}／${SETTINGS.mode==='cpu'?LEVEL_NAME[SETTINGS.level]+'CPU':'人間2人'}）`;
+}
+$('selMyDeck').onchange=e=>{SETTINGS.myDeck=e.target.value;saveSettings()};
+$('selCpuDeck').onchange=e=>{SETTINGS.cpuDeck=e.target.value;saveSettings()};
+// ---- デッキ保存 ----
+const getDecks=()=>store.get('seiiki_decks',{});
+const setDecks=d=>store.set('seiiki_decks',d);
+// ---- デッキ構築 ----
+let bDeck=[],bFac='艦隊';
+function openBuilder(){go('scrBuilder');renderBuilder()}
+function renderBuilder(){
+  const tabs=$('facTabs');tabs.innerHTML='';[...FACTIONS,'共通','全部'].forEach(f=>{const b=document.createElement('button');b.textContent=f;b.className=f===bFac?'on':'';b.onclick=()=>{bFac=f;renderBuilder()};tabs.appendChild(b)});
+  const cnt={};bDeck.forEach(id=>cnt[id]=(cnt[id]||0)+1);
+  const p=$('builderPool');p.innerHTML='';
+  activeCards().filter(c=>bFac==='全部'||c.f===bFac).sort((a,b)=>(a.t>b.t?1:a.t<b.t?-1:a.cost-b.cost)).forEach(c=>{
+    const e=cardEl(c);const n=document.createElement('div');n.className='cnt';n.textContent=`${cnt[c.id]||0}/${c.n}`;e.appendChild(n);
+    if((cnt[c.id]||0)>=c.n||bDeck.length>=DECK_SIZE)e.classList.add('dim');else e.onclick=()=>{bDeck.push(c.id);renderBuilder()};
+    p.appendChild(e)});
+  $('bCount').textContent=bDeck.length;$('mobileCount').textContent=bDeck.length;
+  const curve=$('bCurve');curve.innerHTML='';for(let k=1;k<=8;k++){const n=bDeck.filter(id=>byId[id].cost===k).length;const d=document.createElement('div');d.style.height=Math.min(60,n*5+2)+'px';d.innerHTML=`<span>${k}:${n}</span>`;curve.appendChild(d)}
+  const list=$('bList');list.innerHTML='';
+  Object.entries(cnt).map(([id,n])=>({c:byId[id],n})).sort((a,b)=>a.c.cost-b.c.cost||a.c.nm.localeCompare(b.c.nm)).forEach(({c,n})=>{
+    const d=document.createElement('div');d.innerHTML=`<span>${c.cost} ${c.trump?'★':''}${c.nm} <span class="note">${c.f}</span></span><span>×${n}</span>`;d.title='タップで1枚外す';d.tabIndex=0;d.setAttribute('role','button');d.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();d.click()}};d.onclick=()=>{bDeck.splice(bDeck.indexOf(c.id),1);renderBuilder()};list.appendChild(d)});
+  $('bSave').disabled=bDeck.length!==DECK_SIZE;
+  const saved=$('savedList');saved.innerHTML='';const decks=getDecks();
+  Object.keys(decks).forEach(n=>{const d=document.createElement('div');d.innerHTML=`<span>${esc(n)} <span class="note">${decks[n].length}枚</span></span><span><button class="ghost sm" data-a="load">開く</button> <button class="ghost sm" data-a="del">削除</button></span>`;
+    d.querySelector('[data-a=load]').onclick=e=>{e.stopPropagation();bDeck=[...decks[n]];$('deckName').value=n;renderBuilder()};
+    d.querySelector('[data-a=del]').onclick=e=>{e.stopPropagation();if(confirm(`「${n}」を削除する？`)){delete decks[n];setDecks(decks);renderBuilder();refreshSettingsUI()}};
+    saved.appendChild(d)});
+  if(!Object.keys(decks).length)saved.innerHTML='<span class="note">まだない</span>';
+}
+function saveDeck(){if(!validDeck(bDeck)){toast('30枚と同名上限を確認してください');return;}const n=$('deckName').value.trim()||'デッキ'+(Object.keys(getDecks()).length+1);const d=getDecks();d[n]=[...bDeck];setDecks(d);$('deckName').value=n;SETTINGS.myDeck=n;saveSettings();renderBuilder()}
+function clearDeck(){bDeck=[];renderBuilder()}
+function autoFill(){const main=bFac==='全部'||bFac==='共通'?null:bFac;bDeck=cpuBuildDeck(main);renderBuilder()}
+function exportDeck(){$('deckText').value=bDeck.join(',')}
+function importDeck(){const ids=$('deckText').value.trim().split(/[\s,]+/);if(!validDeck(ids)){toast('30枚・同名上限・使用可能なカードを確認してください');return}bDeck=ids;renderBuilder();toast('デッキを読み込みました')}
+// ---- カードプール ----
+function showPool(){
+  const b=$('poolBody');b.innerHTML='';let total=0;
+  [...FACTIONS,'共通'].forEach(f=>{
+    const cs=activeCards().filter(c=>c.f===f);if(!cs.length)return;
+    const p=document.createElement('div');p.className='panel';p.innerHTML=`<h2>${f}（${cs.length}種）</h2>`;
+    const r=document.createElement('div');r.className='row';
+    cs.sort((a,b)=>(a.t>b.t?1:a.t<b.t?-1:a.cost-b.cost)).forEach(c=>{const e=cardEl(c,'static');const n=document.createElement('div');n.className='cnt';n.textContent='×'+c.n;e.appendChild(n);r.appendChild(e);total+=c.n});
+    p.appendChild(r);b.appendChild(p)});
+  $('poolCount').textContent=`${activeCards().length}種・${total}枚`;go('scrPool');
+}
+async function runSim(n){$('simOut').textContent='計算中…';await waitMs(30);const st=await simulate(n,SETTINGS.limit,[2,2],g=>{if(g%10===0)$('simOut').textContent=`計算中… ${g}/${n}`},$('simMode').value);$('simOut').textContent=simReport(st)}
+let showThink=false;
+function toggleThink(){showThink=!showThink;$('think').classList.toggle('hidden',!showThink);renderThink()}
+function renderThink(){if(!showThink||!G)return;const c=G.lastCandidates;$('think').textContent=c?('CPUが比べた手（上位3つ・点数）\n'+c.map((x,i)=>`${i+1}. [${x.s}] ${x.desc}`).join('\n')):'（初級は候補を出しません）'}
+const STRENGTH_DEFAULT={...CARD_STRENGTH};
+(function loadStrength(){const s=store.get('seiiki_strength',null);if(s)Object.assign(CARD_STRENGTH,s)})();
+function strengthReport(){const arr=activeCards().map(c=>[c.nm+(c.trump?'★':''),CARD_STRENGTH[c.id]||0]).sort((a,b)=>b[1]-a[1]);const f=x=>`${x[0]} ${x[1]>0?'+':''}${(x[1]*100).toFixed(1)}`;return '強いほう:\n  '+arr.slice(0,12).map(f).join('\n  ')+'\n弱いほう:\n  '+arr.slice(-12).reverse().map(f).join('\n  ')}
+async function runStrength(n){$('strOut').textContent='計算中…';await waitMs(30);await measureStrength(n,i=>{$('strOut').textContent=`計算中… ${i}/${n}`});store.set('seiiki_strength',{...CARD_STRENGTH});$('strOut').textContent='更新して保存した。\n'+strengthReport()}
+function resetStrength(){Object.assign(CARD_STRENGTH,STRENGTH_DEFAULT);try{localStorage.removeItem('seiiki_strength')}catch(e){}$('strOut').textContent='初期値に戻した。\n'+strengthReport()}
+function exportStrength(){$('strOut').textContent=JSON.stringify(CARD_STRENGTH)}
+async function runTune(){$('tuneOut').textContent='開始…';await waitMs(30);const {W,logs}=await tuneWeights(1,120,m=>{$('tuneOut').textContent=logs.concat([m]).join('\n')},$('simMode').value);$('tuneOut').textContent=logs.join('\n')+'\n\n調整後の重み:\n'+JSON.stringify(W)}
+async function runVs(n){const lv=[+$('lvA').value,+$('lvB').value];$('vsOut').textContent='計算中…';await waitMs(30);const st=await simulate(n,SETTINGS.limit,lv,g=>{if(g%5===0)$('vsOut').textContent=`計算中… ${g}/${n}`},$('simMode').value);$('vsOut').textContent=simReport(st,false)}
+function quitToTitle(){cancelAI();if(G&&!G.over)saveBattle();if(G)G.over=true;pending=null;selAttacker=null;towerMode=false;refreshSettingsUI();towerLabel();go('scrTitle')}
+function passTo(name,cb){$('passTitle').textContent=`${name}に渡してください`;$('passBtn').onclick=()=>cb();go('scrPass')}
+
+// ---- バトルタワー ----
+let TOWER=null;
+const loadTower=()=>{TOWER=store.get('seiiki_tower',null);return TOWER};
+const saveTower=()=>store.set('seiiki_tower',TOWER);
+function towerLabel(){const t=loadTower();$('towerLabel').textContent=t?`（${t.floor}階・最高${t.best}連勝）`:'';}
+function openTower(){loadTower();if(!TOWER){TOWER={floor:1,streak:0,best:store.get('seiiki_tower_best',0),deck:randomDeck(),cpuDeck:null};saveTower()}go('scrTower');renderTower()}
+function renderTower(){
+  const t=TOWER;const fac=FACTIONS.map(f=>`${f}${t.deck.filter(id=>byId[id].f===f).length}`).join('／');
+  $('towerStatus').innerHTML=`<p>現在 <b style="font-size:22px;color:var(--gold)">${t.floor}階</b>　連勝 ${t.streak}　最高 ${t.best}連勝</p><p class="note">自分のデッキ：${fac}／共通${t.deck.filter(id=>byId[id].f==='共通').length}　相手AI：${LEVEL_NAME[towerLevel(t.floor)]}</p>`;
+  $('towerDeckView').innerHTML='';
+}
+function towerViewDeck(){const v=$('towerDeckView');v.innerHTML='';[...TOWER.deck].sort((a,b)=>byId[a].cost-byId[b].cost).forEach(id=>v.appendChild(cardEl(byId[id],'small static')))}
+function towerReset(){if(!confirm('タワーの記録（最高連勝以外）を消して最初から始める？'))return;TOWER={floor:1,streak:0,best:TOWER?TOWER.best:0,deck:randomDeck(),cpuDeck:null};saveTower();renderTower()}
+function towerChallenge(){
+  TOWER.cpuDeck=cpuTowerDeck(TOWER.cpuDeck,TOWER.floor);saveTower();
+  dr=0;picks=[randomPick(TOWER.deck),randomPick(TOWER.cpuDeck)];who=0;sel=new Set();shieldIdx=[null,null];
+  cancelAI();towerMode=true;battleMode='cpu';sel=new Set(cpuShields(picks[0]));renderShield();
+}
+let towerMode=false,swapTakeSet,swapDropSet;
+function towerAfterGame(){
+  const won=G.result&&G.result.winner===0;
+  if(won){TOWER.streak++;TOWER.floor++;if(TOWER.streak>TOWER.best){TOWER.best=TOWER.streak;store.set('seiiki_tower_best',TOWER.best)}saveTower();openSwap()}
+  else{const s=TOWER.streak;TOWER={floor:1,streak:0,best:TOWER.best,deck:randomDeck(),cpuDeck:null};saveTower();alert(`${s}連勝で終了（最高 ${TOWER.best}連勝）。新しいランダムデッキで1階から。`);go('scrTower');renderTower()}
+}
+function openSwap(){swapTakeSet=new Set();swapDropSet=new Set();go('scrSwap');renderSwap()}
+function renderSwap(){
+  const opp=$('swapOpp');opp.innerHTML='';
+  const counts={};TOWER.deck.forEach(id=>counts[id]=(counts[id]||0)+1);
+  const takeCounts={};[...swapTakeSet].forEach(i=>{const id=TOWER.cpuDeck[i];takeCounts[id]=(takeCounts[id]||0)+1});
+  const dropCounts={};[...swapDropSet].forEach(i=>{const id=TOWER.deck[i];dropCounts[id]=(dropCounts[id]||0)+1});
+  [...TOWER.cpuDeck].map((id,i)=>({id,i})).sort((a,b)=>byId[a.id].cost-byId[b.id].cost).forEach(({id,i})=>{
+    const e=cardEl(byId[id],'small');if(swapTakeSet.has(i))e.classList.add('sel');
+    const over=(counts[id]||0)-(dropCounts[id]||0)+(takeCounts[id]||0)>=byId[id].n&&!swapTakeSet.has(i);
+    if(over||(swapTakeSet.size>=5&&!swapTakeSet.has(i)))e.classList.add('dim');
+    else e.onclick=()=>{if(swapTakeSet.has(i))swapTakeSet.delete(i);else swapTakeSet.add(i);renderSwap()};opp.appendChild(e)});
+  const mine=$('swapMine');mine.innerHTML='';
+  [...TOWER.deck].map((id,i)=>({id,i})).sort((a,b)=>byId[a.id].cost-byId[b.id].cost).forEach(({id,i})=>{
+    const e=cardEl(byId[id],'small');if(swapDropSet.has(i))e.classList.add('sel');
+    e.onclick=()=>{if(swapDropSet.has(i))swapDropSet.delete(i);else swapDropSet.add(i);renderSwap()};mine.appendChild(e)});
+  $('swapTake').textContent=swapTakeSet.size;$('swapDrop').textContent=swapDropSet.size;
+  const finalIds=TOWER.deck.filter((_,i)=>!swapDropSet.has(i)).concat([...swapTakeSet].map(i=>TOWER.cpuDeck[i]));$('swapBtn').disabled=swapTakeSet.size!==swapDropSet.size||!validDeck(finalIds);
+}
+function swapConfirm(){if($('swapBtn').disabled)return;
+  const take=[...swapTakeSet].map(i=>TOWER.cpuDeck[i]);
+  TOWER.deck=TOWER.deck.filter((_,i)=>!swapDropSet.has(i)).concat(take);saveTower();go('scrTower');renderTower();
+}
+function swapSkip(){go('scrTower');renderTower()}
+
+// ---- ゲーム開始・ピック ----
+let packs,dr,picks,who,sel,shieldIdx,srcDecks;
+const NAMES=()=>SETTINGS.mode==='cpu'?['あなた','相手']:['プレイヤー1','プレイヤー2'];
+const handoff=(i,cb)=>{if(SETTINGS.mode==='human')passTo(NAMES()[i],cb);else cb()};
+function startGame(){
+  cancelAI();towerMode=false;battleMode=SETTINGS.mode;const decks=getDecks();
+  dr=0;picks=[[],[]];who=0;sel=new Set();shieldIdx=[null,null];
+  if(SETTINGS.gt==='deck'){
+    if(!decks[SETTINGS.myDeck]){decks['はじめての艦隊']=cpuBuildDeck('艦隊');setDecks(decks);SETTINGS.myDeck='はじめての艦隊';saveSettings()}
+    srcDecks=[decks[SETTINGS.myDeck],SETTINGS.cpuDeck!=='auto'&&decks[SETTINGS.cpuDeck]?decks[SETTINGS.cpuDeck]:cpuBuildDeck()];
+    if(SETTINGS.pick==='random'){picks=[randomPick(srcDecks[0]),randomPick(srcDecks[1])];sel=new Set(cpuShields(picks[0]));handoff(0,renderShield);return}
+    packs=[deckPacks(srcDecks[0]),deckPacks(srcDecks[1])];
+  }else{packs=dealPacks(fullPool())}
+  handoff(0,()=>{go('scrDraft');renderPack()});
+}
+function renderPack(){
+  $('draftTitle').textContent=`ピック ${dr+1} / ${DRAFT_ROUNDS}`;$('draftWho').textContent=SETTINGS.mode==='human'?`${NAMES()[who]}のピック`:'';
+  $('draftHint').textContent=`${packs[who][dr].length}枚から${PACK_TAKE}枚を選ぶ。`;$('pickBtn').textContent=`この${PACK_TAKE}枚を取る`;
+  const p=$('pack');p.innerHTML='';
+  packs[who][dr].forEach((id,i)=>{const e=cardEl(byId[id]);if(sel.has(i))e.classList.add('sel');
+    e.onclick=()=>{if(sel.has(i))sel.delete(i);else if(sel.size<PACK_TAKE)sel.add(i);renderPack()};p.appendChild(e)});
+  $('pickBtn').disabled=sel.size!==PACK_TAKE;$('pickCount').textContent=sel.size+'/'+PACK_TAKE+'枚';
+  const d=$('myDeck');d.innerHTML='';
+  [...picks[who]].sort((a,b)=>byId[a].cost-byId[b].cost).forEach(id=>d.appendChild(cardEl(byId[id],'small static')));
+  $('deckCount').textContent=picks[who].length;
+}
+$('pickBtn').onclick=()=>{
+  packs[who][dr].forEach((id,i)=>{if(sel.has(i))picks[who].push(id)});sel=new Set();
+  if(SETTINGS.mode==='cpu'){picks[1].push(...cpuDraft(packs[1][dr],picks[1]));dr++;if(dr<DRAFT_ROUNDS)renderPack();else{who=0;sel=new Set(cpuShields(picks[0]));renderShield()}}
+  else{if(who===0){who=1;passTo(NAMES()[1],()=>{go('scrDraft');renderPack()})}
+    else{who=0;dr++;if(dr<DRAFT_ROUNDS)passTo(NAMES()[0],()=>{go('scrDraft');renderPack()});else passTo(NAMES()[0],renderShield)}}
+};
+function renderShield(){
+  go('scrShield');$('shieldWho').textContent=SETTINGS.mode==='human'?`${NAMES()[who]}の防衛線`:'';
+  const p=$('shieldPick');p.innerHTML='';
+  picks[who].forEach((id,i)=>{const e=cardEl(byId[id]);if(sel.has(i))e.classList.add('sel');
+    e.onclick=()=>{if(sel.has(i))sel.delete(i);else if(sel.size<SHIELDS)sel.add(i);renderShield()};p.appendChild(e)});
+  const tray=$('shieldSummary');tray.replaceChildren();[...sel].forEach(i=>{const b=document.createElement('button');b.className='ghost sm';b.textContent=byId[picks[who][i]].nm+' ×';b.onclick=()=>{sel.delete(i);renderShield()};tray.appendChild(b)});$('shieldBtn').disabled=sel.size!==SHIELDS;$('shieldCount').textContent=sel.size+'/'+SHIELDS+'枚';
+}
+function autoShield(){sel=new Set(cpuShields(picks[who]));renderShield()}
+$('shieldBtn').onclick=()=>{
+  shieldIdx[who]=[...sel];sel=new Set();
+  if(!towerMode&&SETTINGS.mode==='human'&&who===0){who=1;passTo(NAMES()[1],renderShield)}else{if(towerMode||SETTINGS.mode==='cpu')shieldIdx[1]=cpuShields(picks[1]);startBattle()}
+};
+
+
+function validDeck(ids){if(ids.length!==DECK_SIZE)return false;const counts={};return ids.every(id=>byId[id]&&ACTIVE_SETS.includes(cardSet(byId[id]))&&(counts[id]=(counts[id]||0)+1)<=byId[id].n)}
+// ---- Accessible sheets and game interaction ----
+let G=null,busy=false,selAttacker=null,pending=null,activeScreen='',gameEpoch=0,aiWorker=null,workerURL=null,aiCancel=null;
+let lastFocus=null,toastTimer=null,quickFaction='艦隊',bPane='cards',battleMode='cpu';
+const KEYWORDS={守護:'相手は守護を持つ艦を先に攻撃する必要がある。潜伏中は守護しない。',貫通:'相手の艦を倒した余剰ダメージで防衛線を1枚割る。',速攻:'出したターンから攻撃できる。',連撃:'1ターンに2回攻撃できる。',迎撃:'攻撃されたとき、先に反撃する。攻撃側が沈めば無傷。',回避:'最初に受けるダメージを1度だけ無効にする。',再生:'自分のターンの初めに体力が全回復する。',潜伏:'自分から攻撃するまで、相手の攻撃・呪文の対象にならない。',不死:'一度だけ、撃沈を体力1で耐える。',毒:'戦闘した相手に毒。毒を受けた艦は自分のターン開始時に1ダメージ。',覚醒:'自分のターン開始時、毎回+1/+1される。',進化:'同じ勢力の味方の艦に重ねる。出したターンから攻撃できる。',W:'本体への1回の攻撃で防衛線を2枚割る。'};
+function toast(t){clearTimeout(toastTimer);$('toast').textContent=t;$('toast').classList.remove('hidden');toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),2400)}
+function closeSheet(){if($('sheet').open)$('sheet').close()}
+function sheet(title,html,actions=[]){
+ const d=$('sheet');if(!d.open)lastFocus=document.activeElement;
+ $('sheetTitle').textContent=title;$('sheetBody').innerHTML=html;$('sheetActions').replaceChildren();
+ actions.forEach(a=>{const b=document.createElement('button');b.textContent=a.label;b.className=a.cls||'';b.disabled=!!a.disabled;b.onclick=()=>{closeSheet();a.run&&a.run()};$('sheetActions').appendChild(b)});
+ if(!d.open)d.showModal();d.scrollTop=0;
+}
+function canHumanAct(){return !!G&&!G.over&&!busy&&G.cur.human}
+function perspective(){return battleMode==='cpu'?G.S[0]:G.cur}
+function playProblem(c){
+ if(!G||!G.cur.hand.includes(c)||!canHumanAct())return '相手のターン中はカードの確認ができます。';
+ if(pending||selAttacker)return '先に選択中の行動を完了するか、取り消してください。';
+ if(G.costOf(G.cur,c)>G.cur.energy)return `エネルギーが${G.costOf(G.cur,c)-G.cur.energy}足りません。`;
+ if(c.t==='c'&&!c.evo&&G.cur.board.length>=BOARD_MAX)return '盤面は4体まで。進化や戦闘で枠を空けてください。';
+ const tg=G.targets(G.cur,c);if(tg.required&&!tg.list.length)return tg.kind==='evo'?'同じ勢力の進化元が必要です。':'効果の対象になる艦がいません。';
+ return '';
+}
+function showCard(c,context={}){
+ const s=owner(c),atk=s?G.atkOf(s,c):c.atk+(c.buffA||0)+(c.tempA||0),cost=context.hand?G.costOf(perspective(),c):c.cost;
+ let details=`<div class="detail-banner" style="--fc:${COLORS[c.f]}">${emblem(c.f)}<div><div class="detail-type">${esc(c.f)} / ${c.t==='c'?'艦':c.t==='s'?'呪文':'罠'}${c.trump?' / 切り札':''}${c.evo?' / 進化':''}</div><div class="detail-stats"><span><small>コスト</small>${cost}</span>${c.t==='c'?`<span><small>攻撃</small>${atk}</span><span><small>体力</small>${c.hp}</span>`:''}</div></div></div><div class="detail-effect">${esc(cardText(c)||'特殊効果はありません。').replaceAll('／','\n')}</div>`;
+ if(s){let states=[];if(c.poison)states.push('毒：次の自分のターン開始時に1ダメージ');if(c.stunned)states.push('麻痺：次の自分のターンは攻撃不可');if(c.dodged)states.push('回避は使用済み');if(c.undyingUsed)states.push('不死は使用済み');if(!c.ready)states.push(c.attacks?'攻撃済み':'現在は攻撃不可');if(states.length)details+=`<p class="unavailable">${states.map(esc).join('<br>')}</p>`}
+ const keys=[...(c.kw||[]),...(c.W?['W']:[]),...(c.evo?['進化']:[])];
+ if(keys.length)details+=`<div class="keyword-notes">${keys.map(k=>`<p><b>${k}</b>　${KEYWORDS[k]||''}</p>`).join('')}</div>`;
+ const actions=[];
+ if(context.hand){
+   if(pending&&pending.tgt==='burn'&&canHumanAct())actions.push({label:'このカードを燃やす ⚡+1',run:()=>{G.burn(G.cur,c);pending=null;after()}});
+   else{
+    const problem=playProblem(c);if(problem)details+=`<p class="unavailable">${problem}</p>`;
+    const tg=G.targets(perspective(),c);
+    actions.push({label:c.t==='c'?(c.evo?'進化元を選ぶ':'この艦を出す'):c.t==='r'?'罠を設置する':tg.required?'対象を選ぶ':'この呪文を使う',disabled:!!problem,run:()=>onHandClick(c)});
+    if(canHumanAct()&&!G.cur.burned&&!pending&&!selAttacker)actions.push({label:'燃やす ⚡+1',cls:'ghost',run:()=>{G.burn(G.cur,c);after()}});
+   }
+ }else if(context.board&&s===G.cur&&canHumanAct()&&!pending){
+   actions.push({label:c.ready?'この艦で攻撃する':'現在は攻撃できません',disabled:!c.ready,run:()=>{selAttacker=c;render()}});
+ }else if(context.add){actions.push({label:'デッキに1枚追加',disabled:bDeck.length>=DECK_SIZE||bDeck.filter(id=>id===c.id).length>=c.n,run:()=>{bDeck.push(c.id);renderBuilder()}})}
+ if(!actions.length)actions.push({label:'閉じる'});sheet(c.nm,details,actions);
+}
+function askQuit(){
+ if(activeScreen==='scrBattle'&&G&&!G.over)sheet('対戦を終了しますか？','<p>この試合は中断されます。デッキとタワーの記録は残ります。</p>',[{label:'対戦に戻る',cls:'ghost'},{label:'タイトルへ',run:quitToTitle}]);
+ else quitToTitle();
+}
+function setQuickFaction(f){quickFaction=f;renderQuickFactions()}
+function renderQuickFactions(){const host=$('quickFactions');host.replaceChildren();const sub={'艦隊':'速攻・火力','機械':'守護・反撃','星霊':'展開・幻惑','深淵':'蘇生・妨害'};FACTIONS.forEach(f=>{const b=document.createElement('button');b.style.setProperty('--fc',COLORS[f]);b.className=f===quickFaction?'on':'';b.setAttribute('aria-pressed',f===quickFaction);b.innerHTML=emblem(f)+`<b>${f}</b><span class="note">${sub[f]}</span>`;b.onclick=()=>setQuickFaction(f);host.appendChild(b)})}
+function quickStart(){
+ cancelAI();towerMode=false;battleMode='cpu';who=0;sel=new Set();
+ picks=[randomPick(cpuBuildDeck(quickFaction)),randomPick(cpuBuildDeck())];shieldIdx=picks.map(cpuShields);startBattle(true);
+}
+function cancelAI(){gameEpoch++;if(aiWorker){aiWorker.terminate();aiWorker=null}if(aiCancel){aiCancel(null);aiCancel=null}busy=false}
+function getWorker(){
+ if(aiWorker)return aiWorker;
+ if(!workerURL){const code=$('engine').textContent+'\n'+$('planner').textContent+`\nself.onmessage=e=>{try{const {obs,level,budget,limit,sets}=e.data;ACTIVE_SETS=sets;self.postMessage(deepPlan(obs,level,budget,limit))}catch(error){self.postMessage({error:error.message})}};`;workerURL=URL.createObjectURL(new Blob([code],{type:'text/javascript'}))}
+ aiWorker=new Worker(workerURL);return aiWorker;
+}
+function askAI(E,level,budget){
+ return new Promise(resolve=>{
+   let timer=null,settled=false;const done=result=>{if(settled)return;settled=true;clearTimeout(timer);aiCancel=null;resolve(result)};aiCancel=done;
+   try{const w=getWorker();w.onmessage=e=>done(e.data);w.onerror=()=>{w.terminate();aiWorker=null;done({error:'worker'})};timer=setTimeout(()=>{w.terminate();aiWorker=null;done({error:'timeout'})},Math.max(2000,budget+2000));w.postMessage({obs:publicObservation(E),level,budget,limit:SETTINGS.limit,sets:ACTIVE_SETS})}
+   catch(e){done({error:e.message})}
+ });
+}
+async function cpuTurn(){
+ const game=G,epoch=gameEpoch;busy=true;render();
+ const level=towerMode?towerLevel(TOWER.floor):SETTINGS.level;
+ const total=level===1?200:level===2?600:(SETTINGS.thinkMs||3000),started=performance.now();let spent=0,count=0,stats={nodes:0,ms:0,depth:1,samples:0};
+ while(G===game&&epoch===gameEpoch&&!game.over&&count++<24){
+   const budget=Math.max(30,Math.min(total*.55,total-spent));
+   let res=await askAI(game,level,budget);
+   if(G!==game||epoch!==gameEpoch)return;
+   if(!res||res.error){
+     // Local fallback yields between decisions and limits each synchronous slice.
+     await waitMs(20);res=deepPlan(publicObservation(game),2,18,SETTINGS.limit);stats.fallback=true;
+   }
+   spent+=res.stats.ms;stats.nodes+=res.stats.nodes;stats.ms+=res.stats.ms;stats.depth=Math.max(stats.depth,res.stats.depth);stats.samples+=res.stats.samples;
+   game.aiStats=stats;game.lastCandidates=res.candidates;renderThink();
+   if(!res.act)break;
+   if(!game.apply(res.act))break;
+   render();saveBattle();await waitMs(SETTINGS.fast?100:300);
+ }
+ if(G!==game||epoch!==gameEpoch)return;
+ busy=false;render();if(game.over)finish();else endTurn();
+}
+function startBattle(quick=false){
+ cancelAI();closeSheet();$('log').replaceChildren();$('latestEvent').textContent='';
+ if(!quick)battleMode=towerMode?'cpu':SETTINGS.mode;
+ const lv=towerMode?towerLevel(TOWER.floor):SETTINGS.level,names=towerMode?['あなた',`${TOWER.floor}階の相手`]:battleMode==='cpu'?['あなた','CPU']:['プレイヤー1','プレイヤー2'];
+ G=makeEngine({decks:picks,shieldIdx,names,humans:[true,battleMode==='human'],limit:SETTINGS.limit,levels:[lv,lv],firstIdx:Math.random()<.5?0:1,log,onRender:render,wait:waitMs});
+ selAttacker=null;pending=null;$('endBox').classList.add('hidden');
+ if(battleMode==='human')passTo(G.cur.name,()=>{go('scrBattle');beginTurn()});else{go('scrBattle');beginTurn()}
+}
+function beginTurn(){G.beginTurn(G.cur);saveBattle();if(G.over){finish();return}if(G.cur.human)idle();else cpuTurn()}
+function endTurn(){
+ if(!G||G.over)return;closeSheet();selAttacker=null;pending=null;
+ if(!G.endTurn()){finish();return}
+ if(battleMode==='human')passTo(G.cur.name,()=>{go('scrBattle');beginTurn()});else beginTurn();
+}
+function requestEnd(){
+ if(!canHumanAct())return;
+ const attacks=G.cur.board.filter(c=>c.ready).length,plays=G.cur.hand.filter(c=>!playProblem(c)).length;
+ if(attacks||plays||pending||selAttacker){sheet('ターンを終了しますか？',`<p>${attacks?`攻撃できる艦が <b>${attacks}体</b> います。<br>`:''}${plays?`使用できる手札が <b>${plays}枚</b> あります。<br>`:''}余ったエネルギーは最大3まで持ち越せます。</p>`,[{label:'続ける',cls:'ghost'},{label:'ターン終了',run:endTurn}])}else endTurn();
+}
+function finish(){store.set('seiiki_resume_v16',null);selAttacker=null;pending=null;render();showResult()}
+function showResult(){if(!G||!G.result)return;const me=perspective(),op=G.other(me);sheet(G.result.text,`<p class="eyebrow">BATTLE COMPLETE</p><div class="combat-preview"><div>${esc(me.name)}<br><b>${me.shields.length}</b><br><span class="note">防衛線</span></div><span>—</span><div>${esc(op.name)}<br><b>${op.shields.length}</b><br><span class="note">防衛線</span></div></div><p class="note">${G.result.timeout?'規定ターンが終了したため、防衛線の枚数で判定しました。':'防衛線を突破し、本体への直接攻撃で決着しました。'}</p>`,[{label:'盤面を見る',cls:'ghost'},{label:towerMode?'タワーの結果へ':'もう一度',run:()=>towerMode?towerAfterGame():quickStart()}])}
+function decorateBoardCard(c,me,isEnemy){
+ const e=cardEl(c,'board-card');e.querySelector('.info').remove();let tag=c.poison?'毒':c.stunned?'麻痺':c.stealth?'潜伏':c.ready?(owner(c)===G.cur?'攻撃可':'準備済'):c.attacks?'行動済':'待機';
+ const badge=document.createElement('span');badge.className='state-tag';badge.textContent=tag;e.appendChild(badge);
+ e.onclick=()=>showCard(c,{board:true});
+ if(canHumanAct()){
+   if(pending&&pending.tg&&pending.tg.list.includes(c)){e.classList.add('target');badge.textContent='対象';e.onclick=()=>isEnemy?onEnemyClick(c):onAllyClick(c)}
+   else if(selAttacker&&isEnemy&&G.targetable(G.other(me),c)){e.classList.add('target');badge.textContent='攻撃先';e.onclick=()=>confirmAttack(c)}
+   else if(!isEnemy&&!pending){if(c===selAttacker){e.classList.add('sel');badge.textContent='選択中'}else if(c.ready)e.classList.add('playable');if(!c.ready)e.classList.add('exhausted')}
+ }
+ return e;
+}
+function render(){
+ if(!G)return;const me=perspective(),op=G.other(me),myTurn=canHumanAct();
+ $('battleWho').textContent=towerMode?`タワー ${TOWER.floor}階`:battleMode==='human'?'交代対戦':'星域ドラフト';
+ $('turnNo').textContent=`${G.cur.turns} / ${SETTINGS.limit} TURN`;
+ $('meName').textContent=me.name;$('opName').textContent=op.name;$('meEnergy').textContent='⚡'+me.energy;$('opEnergy').textContent='⚡'+op.energy;
+ $('meDeck').textContent=me.deck.length;$('meGrave').textContent=me.grave.length;$('opHand').textContent=op.hand.length;$('opDeck').textContent=op.deck.length;$('opGrave').textContent=op.grave.length;
+ $('meSide').classList.toggle('active',G.cur===me&&!G.over);$('opSide').classList.toggle('active',G.cur===op&&!G.over);
+ for(const [prefix,s] of [['me',me],['op',op]]){
+  $(prefix+'ShieldN').textContent=s.shields.length;const rail=$(prefix+'Shields');rail.replaceChildren();
+  for(let i=0;i<Math.min(5,s.shields.length);i++){const p=document.createElement('i');p.className='shield-pip';rail.appendChild(p)}
+  if(s.shields.length>5){const n=document.createElement('small');n.textContent='+'+(s.shields.length-5);rail.appendChild(n)}
+  if(!s.shields.length){const n=document.createElement('span');n.className='no-shield';n.textContent='直接攻撃で決着';rail.appendChild(n)}
+  const board=$(prefix+'Board');board.replaceChildren();s.board.forEach(c=>board.appendChild(decorateBoardCard(c,me,prefix==='op')));
+  for(let i=s.board.length;i<BOARD_MAX;i++){const slot=document.createElement('div');slot.className='slot';slot.textContent='＋';slot.setAttribute('aria-label','空き枠');board.appendChild(slot)}
+ }
+ const h=$('hand'),pos=h.scrollLeft;h.replaceChildren();
+ me.hand.forEach(c=>{const e=cardEl({...c,cost:G.costOf(me,c)});e.querySelector('.info').remove();if(!playProblem(c))e.classList.add('playable');else e.classList.add('dim');e.onclick=()=>showCard(c,{hand:true});h.appendChild(e)});
+ if(!me.hand.length){const n=document.createElement('p');n.className='note';n.textContent='手札はありません';h.appendChild(n)}h.scrollLeft=pos;
+ $('handN').textContent=me.hand.length;$('burnBtn').disabled=!myTurn||!!pending||!!selAttacker||me.burned||!me.hand.length;
+ $('burnBtn').textContent=me.burned?'燃焼済み':'燃やす ⚡+1';
+ const face=myTurn&&selAttacker&&!G.hasGuard(op);$('faceBtn').classList.toggle('hidden',!face);$('endBtn').classList.toggle('hidden',!!face||G.over);$('endBtn').disabled=!myTurn;
+ $('faceBtn').textContent=op.shields.length?`防衛線を${Math.min(op.shields.length,selAttacker&&selAttacker.W?2:1)}枚ブレイク`:'直接攻撃で決着';
+ $('opSide').classList.toggle('shield-attack',!!face);$('opSide').onclick=()=>{if(face)confirmAttack(null)};
+ $('opSide').setAttribute('role',face?'button':'group');$('opSide').tabIndex=face?0:-1;
+ $('cancelBtn').classList.toggle('hidden',!myTurn||!(pending||selAttacker));$('burnBtn').classList.toggle('hidden',!!pending||!!selAttacker||G.over);
+ $('endBox').classList.toggle('hidden',!G.over);$('againBtn').textContent=towerMode?'タワーの結果へ':'もう一度';
+ $('msg').classList.toggle('thinking',busy);
+ let text=G.over?(G.result?G.result.text:'対戦終了'):busy?'CPUが作戦を考えています…':pending?(pending.tgt==='burn'?'燃やす手札を選び、詳細画面で確定':pending.tg.kind==='evo'?'進化元の味方の艦を選ぶ':pending.tg.kind==='enemy'?'赤枠の敵の艦を選ぶ':'赤枠の味方の艦を選ぶ'):selAttacker?`${selAttacker.nm} → ${G.hasGuard(op)?'守護の艦を攻撃':'相手の艦か、防衛線を選ぶ'}`:'あなたのターン · 手札を使う / 艦で攻撃';
+ msg(text);
+}
+function confirmAttack(target){
+ if(!canHumanAct()||!selAttacker)return;const a=selAttacker,me=G.cur,op=G.other(me);let content='';
+ if(target){const r=G.combat(me,a,op,target,true);content=`<div class="combat-preview"><div>${esc(a.nm)}<br><b>${a.hp} → ${Math.max(0,r.ah)}</b><br><span class="note">${r.aDies?'撃沈見込み':'自分の体力'}</span></div><span>⇄</span><div>${esc(target.nm)}<br><b>${target.hp} → ${Math.max(0,r.dh)}</b><br><span class="note">${r.dDies?'撃沈見込み':'相手の体力'}</span></div></div><p class="note">戦闘部分の見込みです。攻撃時効果・撃沈時効果・罠によって結果は変わります。</p>`}
+ else content=`<p><b>${esc(a.nm)}</b> で${op.shields.length?`防衛線を最大 <b>${a.W?2:1}枚</b> ブレイクします。`:'相手本体を攻撃します。通れば勝利です。'}</p>${op.shields.length?'<p class="note">割れたカードは相手の手札へ。罠なら即座に発動します。</p>':''}`;
+ sheet('この攻撃を実行',content,[{label:'選び直す',cls:'ghost'},{label:'攻撃する',cls:'face',run:()=>{if(!canHumanAct()||selAttacker!==a)return;G.attack(me,a,op,target);selAttacker=null;after()}}]);
+}
+const idle=()=>render();
+function onHandClick(c){if(playProblem(c))return;const tg=G.targets(G.cur,c);if(tg.kind&&tg.list.length){pending={card:c,tg};render();return}G.playCard(G.cur,c,null);after()}
+function after(){saveBattle();if(G.over)finish();else idle()}
+function onEnemyClick(c){if(pending&&pending.tg.list.includes(c)){G.playCard(G.cur,pending.card,c);pending=null;after()}}
+function onAllyClick(c){if(pending&&pending.tg.list.includes(c)){G.playCard(G.cur,pending.card,c);pending=null;after()}}
+function showLog(){sheet('対戦ログ',`<div class="log">${$('log').innerHTML||'<p>まだ行動はありません。</p>'}</div>`,[{label:'閉じる'}])}
+function showBattleMenu(){sheet('対戦メニュー',`<p class="note">${busy?'CPUの思考中もカード詳細とログを確認できます。':'カードをタップして効果を確認し、操作を選んでください。'}</p><div class="opt"><button class="ghost" onclick="showLog()">対戦ログ</button><button class="ghost" onclick="showAIInfo()">CPUの思考</button><button class="ghost" onclick="showQuickRules()">遊び方</button></div>`,[{label:'対戦に戻る'},{label:'タイトルへ',cls:'ghost',run:askQuit}])}
+function renderThink(){if(!G)return;const s=G.aiStats;$('think').textContent=s?(s.fallback?'この環境では簡易思考で動作中です。\n':'')+`探索 ${s.nodes.toLocaleString()}局面 / 思考 ${(s.ms/1000).toFixed(1)}秒\n実施した先読み：最大${s.depth}ターン区間 / 比較サンプル ${s.samples}\n`+(G.lastCandidates||[]).map((x,i)=>`${i+1}. ${describeAction(x.act)}：${x.s}`).join('\n'):'まだCPUは行動していません。'}
+function describeAction(a){if(!a)return '行動せずターン終了';const cards=G.S.flatMap(s=>s.board.concat(s.hand)),c=cards.find(c=>c.u===a.u),t=cards.find(c=>c.u===a.tu);return a.k==='play'?`${c?c.nm:'カード'}を使用`:a.k==='burn'?`${c?c.nm:'手札'}を燃焼`:`${c?c.nm:'艦'}→${t?t.nm:'本体'}`}
+function showAIInfo(){renderThink();sheet('CPUの思考',`<pre>${esc($('think').textContent)}</pre><p class="note">局面の評価値で、勝率ではありません。見えない手札と罠は公開情報から推定。時間内に候補を絞って読むため、最善手は保証しません。</p>`,[{label:'閉じる'}])}
+function showQuickRules(){sheet('3つ覚えれば遊べる',`<p><b>01　手札をタップ → 使う</b><br>⚡がコスト。艦は4体まで。出したターンは攻撃できません（速攻・進化を除く）。</p><p><b>02　自分の艦 → 攻撃先を選ぶ</b><br>守護がいなければ本体を攻撃できます。まず5枚の防衛線を割り、さらに直接攻撃すれば勝ち。</p><p><b>03　行動を終えたらターン終了</b><br>余った⚡は3まで持ち越し。毎ターン1枚、手札を燃やして⚡+1できます。</p><p class="note">手札は最大8枚。規定ターン終了時は防衛線の多い側が勝ち。同数なら引き分け。</p>`,[{label:'わかった'}])}
+function saveBattle(){if(!G||G.over||battleMode!=='cpu')return;store.set('seiiki_resume_v16',{state:G.snapshot(),towerMode,limit:SETTINGS.limit,level:SETTINGS.level,sets:SETTINGS.sets,thinkMs:SETTINGS.thinkMs,logs:$('log').innerHTML,at:Date.now()})}
+function resumeBattle(){const saved=store.get('seiiki_resume_v16',null);if(!saved||!saved.state)return;cancelAI();battleMode='cpu';towerMode=!!saved.towerMode;if(towerMode)loadTower();SETTINGS.limit=saved.limit;SETTINGS.level=saved.level;if(saved.sets)SETTINGS.sets=saved.sets;if(saved.thinkMs)SETTINGS.thinkMs=saved.thinkMs;applySets();selAttacker=null;pending=null;G=makeEngine({state:saved.state,limit:SETTINGS.limit,log,onRender:render,wait:waitMs});uid=Math.max(uid,...G.S.flatMap(s=>s.hand.concat(s.board,s.deck,s.shields)).map(c=>c.u+1));$('log').innerHTML=saved.logs||'';go('scrBattle');if(G.cur.human)render();else cpuTurn()}
+function updateResume(){$('resumeBtn').classList.toggle('hidden',!store.get('seiiki_resume_v16',null))}
+function builderPane(p){bPane=p;document.querySelector('.builder').dataset.pane=p;$('showCards').classList.toggle('on',p==='cards');$('showDeck').classList.toggle('on',p==='deck');window.scrollTo(0,0)}
+function toggleThink(){showAIInfo()}
+$('sheetClose').onclick=closeSheet;$('sheet').addEventListener('click',e=>{if(e.target===$('sheet')){const r=$('sheet').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeSheet()}});
+$('sheet').addEventListener('close',()=>{if(lastFocus&&lastFocus.isConnected)lastFocus.focus({preventScroll:true})});
+$('faceBtn').onclick=()=>confirmAttack(null);$('opSide').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&$('opSide').classList.contains('shield-attack')){e.preventDefault();confirmAttack(null)}};
+$('burnBtn').onclick=()=>{if(canHumanAct()&&!G.cur.burned){pending={tgt:'burn'};render()}};
+$('cancelBtn').onclick=()=>{selAttacker=null;pending=null;render()};$('endBtn').onclick=requestEnd;
+$('againBtn').onclick=()=>towerMode?towerAfterGame():quickStart();$('logBtn').onclick=showLog;
+$('thinkTime').onchange=e=>{SETTINGS.thinkMs=+e.target.value;saveSettings()};
+loadSettings();SETTINGS.level=Math.min(4,Math.max(1,SETTINGS.level));applySets();refreshSettingsUI();towerLabel();renderQuickFactions();updateResume();go('scrTitle');
+window.addEventListener('pagehide',saveBattle);
+</script>
+</body>
+</html>
